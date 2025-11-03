@@ -14,8 +14,6 @@ public class MapGeneratorRules : MonoBehaviour
 {
     public MapGenerator mapGenerator;
     public List<TileRule> tileRules;
-    
-    [Header("Configuración de Ruido")]
     [Range(0, 1000000)] public int seed = 0;
     [Range(0.01f, 0.5f)] public float globalNoiseScale = 0.1f;
     [Range(1, 8)] public int octaves = 3;
@@ -24,19 +22,11 @@ public class MapGeneratorRules : MonoBehaviour
     
     public void GenerateMapWithRules()
     {
-        if (mapGenerator == null) 
-        {
-            mapGenerator = GetComponent<MapGenerator>();
-            if (mapGenerator == null) return;
-        }
+        if (mapGenerator == null) mapGenerator = GetComponent<MapGenerator>();
+        if (mapGenerator == null) return;
 
-        // Generar semilla aleatoria
         seed = Random.Range(0, 1000000);
-        
-        // Generar matriz del mapa
         int[,] mapData = GenerateMapMatrix();
-        
-        // Pasar los datos al MapGenerator
         mapGenerator.SetMapData(mapData);
     }
 
@@ -54,15 +44,12 @@ public class MapGeneratorRules : MonoBehaviour
         {
             for (int x = 0; x < width; x++)
             {
-                // Coordenadas para ruido (sin ajuste hexagonal)
                 float noiseX = (x + offsetX) * globalNoiseScale;
                 float noiseY = (y + offsetY) * globalNoiseScale;
-                
                 float noiseValue = GenerateOctaveNoise(noiseX, noiseY);
                 mapMatrix[y, x] = SelectTileFromNoise(noiseValue);
             }
         }
-
         return mapMatrix;
     }
 
@@ -77,35 +64,24 @@ public class MapGeneratorRules : MonoBehaviour
         {
             float perlinValue = Mathf.PerlinNoise(x * frequency, y * frequency);
             value += perlinValue * amplitude;
-            
             maxValue += amplitude;
             amplitude *= persistence;
             frequency *= lacunarity;
         }
-
         return value / maxValue;
     }
 
     int SelectTileFromNoise(float noiseValue)
     {
-        // Ordenar reglas por threshold (mayor a menor)
         List<TileRule> sortedRules = new List<TileRule>(tileRules);
         sortedRules.Sort((a, b) => b.threshold.CompareTo(a.threshold));
 
-        // Encontrar la regla apropiada
         foreach (var rule in sortedRules)
-        {
             if (noiseValue >= rule.threshold)
-            {
                 return rule.tileType;
-            }
-        }
 
-        // Fallback a la primera regla caminable
         foreach (var rule in tileRules)
-        {
             if (rule.walkable) return rule.tileType;
-        }
 
         return 0;
     }

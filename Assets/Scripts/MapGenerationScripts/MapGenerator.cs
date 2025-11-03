@@ -8,23 +8,19 @@ public class MapGenerator : MonoBehaviour
     public List<GameObject> terrainPrefabs;
     
     private int[,] mapMatrix;
+    private Dictionary<Vector2Int, TileData> tileGrid = new Dictionary<Vector2Int, TileData>();
 
     public void GenerateMap()
     {
         ClearMap();
-        
-        // Buscar el componente de reglas y usarlo
         MapGeneratorRules rules = GetComponent<MapGeneratorRules>();
-        if (rules != null)
-        {
-            rules.GenerateMapWithRules();
-        }
+        if (rules != null) rules.GenerateMapWithRules();
         else
         {
-            // Fallback: generar mapa vacío
             GenerateEmptyMap();
             MapDrawing();
         }
+        ConnectAllNeighbors();
     }
 
     public void SetMapData(int[,] newMapData)
@@ -33,39 +29,23 @@ public class MapGenerator : MonoBehaviour
         {
             mapMatrix = newMapData;
             MapDrawing();
-        }
-        else
-        {
-            Debug.LogError("Map data dimensions don't match!");
+            ConnectAllNeighbors();
         }
     }
 
     void GenerateEmptyMap()
     {
         mapMatrix = new int[mapHeight, mapWidth];
-        
         for (int row = 0; row < mapHeight; row++)
-        {
             for (int col = 0; col < mapWidth; col++)
-            {
                 mapMatrix[row, col] = 0;
-            }
-        }
     }
 
     void MapDrawing()
     {
-        if (terrainPrefabs == null || terrainPrefabs.Count == 0)
-        {
-            Debug.LogError("No terrain prefabs assigned!");
-            return;
-        }
+        if (terrainPrefabs == null || terrainPrefabs.Count == 0) return;
 
-        if (mapMatrix == null)
-        {
-            Debug.LogError("No map data to draw!");
-            return;
-        }
+        tileGrid.Clear();
 
         for (int row = 0; row < mapHeight; row++)
         {
@@ -73,34 +53,89 @@ public class MapGenerator : MonoBehaviour
             {
                 float xPos = col * 1.7f;
                 float yPos = row * 0.5f;
-                
-                if (row % 2 == 1)
-                {
-                    xPos += 0.85f;
-                }
+                if (row % 2 == 1) xPos += 0.85f;
 
-                Vector3 position = new Vector3(xPos, yPos, 0);
-                
                 int tileType = mapMatrix[row, col];
                 if (tileType >= 0 && tileType < terrainPrefabs.Count && terrainPrefabs[tileType] != null)
                 {
+                    Vector3 position = new Vector3(xPos, yPos, 0);
                     GameObject tile = Instantiate(terrainPrefabs[tileType], position, Quaternion.identity);
-                    tile.transform.SetParent(this.transform);
+                    tile.transform.SetParent(transform);
                     tile.name = $"Hex_{row}_{col}_Type{tileType}";
-                }
-                else
-                {
-                    Debug.LogWarning($"Invalid tile type {tileType} at position ({row}, {col})");
+                    
+                    ApplyTileData(tile, tileType, row, col);
+                    tileGrid[new Vector2Int(row, col)] = tile.GetComponent<TileData>();
                 }
             }
         }
     }
     
+    void ApplyTileData(GameObject tile, int tileType, int row, int col)
+    {
+        MapGeneratorRules rules = GetComponent<MapGeneratorRules>();
+        if (rules != null)
+        {
+            var rule = rules.tileRules.Find(r => r.tileType == tileType);
+            if (rule != null)
+            {
+                TileData data = tile.GetComponent<TileData>();
+                if (data == null) data = tile.AddComponent<TileData>();
+                data.Initialize(rule.tileType, rule.walkable, rule.movementWeight, row, col);
+            }
+        }
+    }
+    
+    void ConnectAllNeighbors()
+    {
+        foreach (var tile in tileGrid.Values)
+            ConnectNeighbors(tile.gridPosition);
+    }
+    
+    void ConnectNeighbors(Vector2Int pos)
+    {
+        TileData currentTile = tileGrid[pos];
+        foreach (Vector2Int neighborPos in GetExactNeighborPositions(pos))
+        {
+            if (tileGrid.TryGetValue(neighborPos, out TileData neighbor))
+                currentTile.AddNeighbor(neighbor);
+        }
+    }
+    
+    List<Vector2Int> GetExactNeighborPositions(Vector2Int pos)
+    {
+        int row = pos.x;
+        int col = pos.y;
+        List<Vector2Int> neighbors = new List<Vector2Int>();
+
+        int rowParity = row % 2;
+
+        // Patrón basado en tus ejemplos
+        neighbors.Add(new Vector2Int(row + 2, col));        // Norte
+        neighbors.Add(new Vector2Int(row - 2, col));        // Sur
+        neighbors.Add(new Vector2Int(row + 1, col + rowParity));     // Noreste
+        neighbors.Add(new Vector2Int(row - 1, col + rowParity));     // Sureste
+        neighbors.Add(new Vector2Int(row + 1, col - (1 - rowParity))); // Noroeste
+        neighbors.Add(new Vector2Int(row - 1, col - (1 - rowParity))); // Suroeste
+
+        List<Vector2Int> validNeighbors = new List<Vector2Int>();
+        foreach (Vector2Int neighbor in neighbors)
+        {
+            if (neighbor.x >= 0 && neighbor.x < mapHeight && neighbor.y >= 0 && neighbor.y < mapWidth)
+                validNeighbors.Add(neighbor);
+        }
+
+        return validNeighbors;
+    }
+    
     void ClearMap()
     {
+        tileGrid.Clear();
         while (transform.childCount > 0)
-        {
             DestroyImmediate(transform.GetChild(0).gameObject);
-        }
+    }
+    
+    public TileData GetTileAtPosition(Vector2Int position)
+    {
+        return tileGrid.TryGetValue(position, out TileData tile) ? tile : null;
     }
 }
