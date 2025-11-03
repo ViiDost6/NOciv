@@ -12,18 +12,41 @@ public class MapGenerator : MonoBehaviour
     public void GenerateMap()
     {
         ClearMap();
-        GenerateMapMatrix(mapHeight, mapWidth);
-        MapDrawing();
+        
+        MapGeneratorRules rules = GetComponent<MapGeneratorRules>();
+        if (rules != null)
+        {
+            rules.GenerateMapWithRules();
+        }
+        else
+        {
+            GenerateEmptyMap();
+            MapDrawing();
+        }
     }
 
-    void GenerateMapMatrix(int height, int width)
+    public void SetMapData(int[,] newMapData)
     {
-        mapMatrix = new int[height, width];
-        for (int i = 0; i < height; i++)
+        if (newMapData.GetLength(0) == mapHeight && newMapData.GetLength(1) == mapWidth)
         {
-            for (int j = 0; j < width; j++)
+            mapMatrix = newMapData;
+            MapDrawing();
+        }
+        else
+        {
+            Debug.LogError("Map data dimensions don't match!");
+        }
+    }
+
+    void GenerateEmptyMap()
+    {
+        mapMatrix = new int[mapHeight, mapWidth];
+        
+        for (int row = 0; row < mapHeight; row++)
+        {
+            for (int col = 0; col < mapWidth; col++)
             {
-                mapMatrix[i, j] = 0;
+                mapMatrix[row, col] = 0;
             }
         }
     }
@@ -33,6 +56,12 @@ public class MapGenerator : MonoBehaviour
         if (terrainPrefabs == null || terrainPrefabs.Count == 0)
         {
             Debug.LogError("No terrain prefabs assigned!");
+            return;
+        }
+
+        if (mapMatrix == null)
+        {
+            Debug.LogError("No map data to draw!");
             return;
         }
 
@@ -49,9 +78,14 @@ public class MapGenerator : MonoBehaviour
                 }
 
                 Vector3 position = new Vector3(xPos, yPos, 0);
-                GameObject tile = Instantiate(terrainPrefabs[0], position, Quaternion.identity);
-                tile.transform.SetParent(this.transform);
-                tile.name = $"Hex_{row}_{col}";
+                
+                int tileType = mapMatrix[row, col];
+                if (tileType >= 0 && tileType < terrainPrefabs.Count && terrainPrefabs[tileType] != null)
+                {
+                    GameObject tile = Instantiate(terrainPrefabs[tileType], position, Quaternion.identity);
+                    tile.transform.SetParent(this.transform);
+                    tile.name = $"Hex_{row}_{col}_Type{tileType}";
+                }
             }
         }
     }
@@ -62,5 +96,10 @@ public class MapGenerator : MonoBehaviour
         {
             DestroyImmediate(transform.GetChild(0).gameObject);
         }
+    }
+
+    public int[,] GetMapData()
+    {
+        return mapMatrix;
     }
 }

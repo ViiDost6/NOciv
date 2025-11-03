@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2432436045258632736}
   - component: {fileID: 1624970872234625860}
+  - component: {fileID: 6243605879179212884}
   m_Layer: 0
   m_Name: Floor
   m_TagString: Untagged
@@ -90,3 +91,19 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &6243605879179212884
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 540483219988816720}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c65bca0b9c13d474a9906d16169020d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TileSettings
+  tileType: 0
+  walkable: 1
+  weight: 1
+  troopCapacity: 1
