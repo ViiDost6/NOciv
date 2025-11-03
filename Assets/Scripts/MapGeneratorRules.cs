@@ -5,11 +5,8 @@ using System.Collections.Generic;
 public class TileRule
 {
     public int tileType;
-    [Range(0f, 1f)] public float minProbability = 0f;
-    [Range(0f, 1f)] public float maxProbability = 1f;
-    [Range(0, 1000)] public int maxCount = 1000;
-    public bool requiredForConnectivity = false;
-    [Range(0.1f, 5f)] public float baseWeight = 1f;
+    [Range(0f, 1f)] public float threshold = 0.5f;
+    [Range(1f, 999f)] public float movementWeight = 1f;
     public bool walkable = true;
 }
 
@@ -18,257 +15,98 @@ public class MapGeneratorRules : MonoBehaviour
     public MapGenerator mapGenerator;
     public List<TileRule> tileRules;
     
-    private Dictionary<int, int> tileCounts;
-    private Dictionary<int, int> tileTargets;
-    private int[,] mapMatrix;
-    private int mapHeight;
-    private int mapWidth;
-
-    void Start()
-    {
-        if (mapGenerator == null)
-            mapGenerator = GetComponent<MapGenerator>();
-    }
-
+    [Header("Configuración de Ruido")]
+    [Range(0, 1000000)] public int seed = 0;
+    [Range(0.01f, 0.5f)] public float globalNoiseScale = 0.1f;
+    [Range(1, 8)] public int octaves = 3;
+    [Range(0f, 1f)] public float persistence = 0.5f;
+    [Range(1f, 4f)] public float lacunarity = 2f;
+    
     public void GenerateMapWithRules()
     {
-        if (mapGenerator == null) return;
-
-        InitializeTileCounts();
-        mapHeight = mapGenerator.mapHeight;
-        mapWidth = mapGenerator.mapWidth;
-        mapMatrix = new int[mapHeight, mapWidth];
-        
-        CalculateTileTargets();
-        GenerateMapWithBalancedDistribution();
-        ApplyConnectivityRules();
-        
-        mapGenerator.SetMapData(mapMatrix);
-        ApplyTileDataToMap();
-    }
-
-    void InitializeTileCounts()
-    {
-        tileCounts = new Dictionary<int, int>();
-        tileTargets = new Dictionary<int, int>();
-        foreach (var rule in tileRules)
+        if (mapGenerator == null) 
         {
-            tileCounts[rule.tileType] = 0;
-            tileTargets[rule.tileType] = 0;
-        }
-    }
-
-    void CalculateTileTargets()
-    {
-        int totalTiles = mapHeight * mapWidth;
-        float totalProbability = 0f;
-
-        foreach (var rule in tileRules)
-        {
-            float avgProbability = (rule.minProbability + rule.maxProbability) / 2f;
-            totalProbability += avgProbability;
+            mapGenerator = GetComponent<MapGenerator>();
+            if (mapGenerator == null) return;
         }
 
-        foreach (var rule in tileRules)
+        // Generar semilla aleatoria
+        seed = Random.Range(0, 1000000);
+        
+        // Generar matriz del mapa
+        int[,] mapData = GenerateMapMatrix();
+        
+        // Pasar los datos al MapGenerator
+        mapGenerator.SetMapData(mapData);
+    }
+
+    int[,] GenerateMapMatrix()
+    {
+        int height = mapGenerator.mapHeight;
+        int width = mapGenerator.mapWidth;
+        int[,] mapMatrix = new int[height, width];
+
+        Random.InitState(seed);
+        float offsetX = Random.Range(-10000f, 10000f);
+        float offsetY = Random.Range(-10000f, 10000f);
+
+        for (int y = 0; y < height; y++)
         {
-            float avgProbability = (rule.minProbability + rule.maxProbability) / 2f;
-            float proportion = avgProbability / totalProbability;
-            int targetCount = Mathf.RoundToInt(totalTiles * proportion);
+            for (int x = 0; x < width; x++)
+            {
+                // Coordenadas para ruido (sin ajuste hexagonal)
+                float noiseX = (x + offsetX) * globalNoiseScale;
+                float noiseY = (y + offsetY) * globalNoiseScale;
+                
+                float noiseValue = GenerateOctaveNoise(noiseX, noiseY);
+                mapMatrix[y, x] = SelectTileFromNoise(noiseValue);
+            }
+        }
+
+        return mapMatrix;
+    }
+
+    float GenerateOctaveNoise(float x, float y)
+    {
+        float value = 0f;
+        float amplitude = 1f;
+        float frequency = 1f;
+        float maxValue = 0f;
+
+        for (int i = 0; i < octaves; i++)
+        {
+            float perlinValue = Mathf.PerlinNoise(x * frequency, y * frequency);
+            value += perlinValue * amplitude;
             
-            int maxAllowed = rule.maxCount == 1000 ? totalTiles : rule.maxCount;
-            tileTargets[rule.tileType] = Mathf.Min(targetCount, maxAllowed);
+            maxValue += amplitude;
+            amplitude *= persistence;
+            frequency *= lacunarity;
         }
+
+        return value / maxValue;
     }
 
-    void GenerateMapWithBalancedDistribution()
+    int SelectTileFromNoise(float noiseValue)
     {
-        List<Vector2Int> allPositions = new List<Vector2Int>();
-        for (int y = 0; y < mapHeight; y++)
+        // Ordenar reglas por threshold (mayor a menor)
+        List<TileRule> sortedRules = new List<TileRule>(tileRules);
+        sortedRules.Sort((a, b) => b.threshold.CompareTo(a.threshold));
+
+        // Encontrar la regla apropiada
+        foreach (var rule in sortedRules)
         {
-            for (int x = 0; x < mapWidth; x++)
+            if (noiseValue >= rule.threshold)
             {
-                allPositions.Add(new Vector2Int(x, y));
+                return rule.tileType;
             }
         }
 
-        ShufflePositions(allPositions);
-
-        foreach (Vector2Int pos in allPositions)
-        {
-            int tileType = SelectTileTypeWithBalance(pos);
-            mapMatrix[pos.y, pos.x] = tileType;
-            tileCounts[tileType]++;
-        }
-    }
-
-    void ShufflePositions(List<Vector2Int> positions)
-    {
-        for (int i = 0; i < positions.Count; i++)
-        {
-            int randomIndex = Random.Range(i, positions.Count);
-            Vector2Int temp = positions[i];
-            positions[i] = positions[randomIndex];
-            positions[randomIndex] = temp;
-        }
-    }
-
-    int SelectTileTypeWithBalance(Vector2Int pos)
-    {
-        List<int> availableTypes = new List<int>();
-        List<float> weights = new List<float>();
-
+        // Fallback a la primera regla caminable
         foreach (var rule in tileRules)
         {
-            if (tileCounts[rule.tileType] < tileTargets[rule.tileType])
-            {
-                availableTypes.Add(rule.tileType);
-                
-                float baseProbability = Random.Range(rule.minProbability, rule.maxProbability);
-                float balanceWeight = CalculateBalanceWeight(rule.tileType);
-                float clusterWeight = CalculateClusterWeight(rule.tileType, pos, rule.baseWeight);
-                
-                float finalWeight = baseProbability * balanceWeight * clusterWeight;
-                weights.Add(finalWeight);
-            }
+            if (rule.walkable) return rule.tileType;
         }
 
-        if (availableTypes.Count == 0) return 0;
-
-        float totalWeight = 0f;
-        foreach (float weight in weights) totalWeight += weight;
-
-        float randomValue = Random.Range(0f, totalWeight);
-        float currentWeight = 0f;
-
-        for (int i = 0; i < availableTypes.Count; i++)
-        {
-            currentWeight += weights[i];
-            if (randomValue <= currentWeight)
-            {
-                return availableTypes[i];
-            }
-        }
-
-        return availableTypes[0];
-    }
-
-    float CalculateBalanceWeight(int tileType)
-    {
-        int currentCount = tileCounts[tileType];
-        int targetCount = tileTargets[tileType];
-        
-        if (currentCount >= targetCount) return 0.01f;
-        
-        float progress = (float)currentCount / targetCount;
-        return 1.0f + (1.0f - progress) * 2.0f;
-    }
-
-    float CalculateClusterWeight(int tileType, Vector2Int pos, float baseWeight)
-    {
-        List<Vector2Int> neighbors = GetHexNeighbors(pos);
-        int sameTypeNeighbors = 0;
-        int totalValidNeighbors = 0;
-
-        foreach (Vector2Int neighbor in neighbors)
-        {
-            if (neighbor.x >= 0 && neighbor.x < mapWidth && neighbor.y >= 0 && neighbor.y < mapHeight)
-            {
-                totalValidNeighbors++;
-                if (mapMatrix[neighbor.y, neighbor.x] == tileType)
-                {
-                    sameTypeNeighbors++;
-                }
-            }
-        }
-
-        if (totalValidNeighbors == 0) return 1.0f;
-
-        float clusterFactor = (float)sameTypeNeighbors / totalValidNeighbors;
-        
-        // BASE WEIGHT controla el agrupamiento:
-        // baseWeight = 0.1 → Evita agrupamiento (×0.1)
-        // baseWeight = 1.0 → Neutral (×1.0)  
-        // baseWeight = 5.0 → Favorece mucho agrupamiento (×5.0)
-        return 1.0f + (clusterFactor * baseWeight * 2.0f);
-    }
-
-    List<Vector2Int> GetHexNeighbors(Vector2Int pos)
-    {
-        List<Vector2Int> neighbors = new List<Vector2Int>();
-        int x = pos.x;
-        int y = pos.y;
-
-        bool isOddRow = y % 2 == 1;
-
-        Vector2Int[] hexOffsets = isOddRow ? 
-            new Vector2Int[] {
-                new Vector2Int(0, -1),
-                new Vector2Int(1, -1),
-                new Vector2Int(1, 0),
-                new Vector2Int(0, 1),
-                new Vector2Int(1, 1),
-                new Vector2Int(-1, 0)
-            } :
-            new Vector2Int[] {
-                new Vector2Int(-1, -1),
-                new Vector2Int(0, -1),
-                new Vector2Int(1, 0),
-                new Vector2Int(-1, 1),
-                new Vector2Int(0, 1),
-                new Vector2Int(-1, 0)
-            };
-
-        foreach (Vector2Int offset in hexOffsets)
-        {
-            neighbors.Add(new Vector2Int(x + offset.x, y + offset.y));
-        }
-
-        return neighbors;
-    }
-
-    void ApplyConnectivityRules()
-    {
-        foreach (var rule in tileRules)
-        {
-            if (rule.requiredForConnectivity && tileCounts[rule.tileType] == 0)
-            {
-                ForceTilePlacement(rule.tileType);
-            }
-        }
-    }
-
-    void ForceTilePlacement(int tileType)
-    {
-        for (int y = 1; y < mapHeight - 1; y += 2)
-        {
-            for (int x = 1; x < mapWidth - 1; x += 2)
-            {
-                if (mapMatrix[y, x] != tileType)
-                {
-                    int oldType = mapMatrix[y, x];
-                    mapMatrix[y, x] = tileType;
-                    tileCounts[tileType]++;
-                    tileCounts[oldType]--;
-                    return;
-                }
-            }
-        }
-    }
-
-    void ApplyTileDataToMap()
-    {
-        foreach (Transform child in mapGenerator.transform)
-        {
-            TileData tileData = child.GetComponent<TileData>();
-            if (tileData != null)
-            {
-                TileRule rule = tileRules.Find(r => r.tileType == tileData.tileType);
-                if (rule != null)
-                {
-                    tileData.walkable = rule.walkable;
-                    tileData.weight = rule.baseWeight;
-                }
-            }
-        }
+        return 0;
     }
 }

@@ -13,6 +13,7 @@ public class MapGenerator : MonoBehaviour
     {
         ClearMap();
         
+        // Buscar el componente de reglas y usarlo
         MapGeneratorRules rules = GetComponent<MapGeneratorRules>();
         if (rules != null)
         {
@@ -20,6 +21,7 @@ public class MapGenerator : MonoBehaviour
         }
         else
         {
+            // Fallback: generar mapa vacío
             GenerateEmptyMap();
             MapDrawing();
         }
@@ -86,6 +88,10 @@ public class MapGenerator : MonoBehaviour
                     tile.transform.SetParent(this.transform);
                     tile.name = $"Hex_{row}_{col}_Type{tileType}";
                 }
+                else
+                {
+                    Debug.LogWarning($"Invalid tile type {tileType} at position ({row}, {col})");
+                }
             }
         }
     }
@@ -96,10 +102,5 @@ public class MapGenerator : MonoBehaviour
         {
             DestroyImmediate(transform.GetChild(0).gameObject);
         }
-    }
-
-    public int[,] GetMapData()
-    {
-        return mapMatrix;
     }
 }
