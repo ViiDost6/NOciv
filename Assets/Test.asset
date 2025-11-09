@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f68091db895f282b5bea84f96e0a0711, type: 3}
+  m_Name: Test
+  m_EditorClassIdentifier: Assembly-CSharp::BehaviourTree
+  rootNode:
+    rid: 2042380301832028224
+  nodes:
+  - rid: 2042380301832028224
+  - rid: 2042380303437660231
+  - rid: 2042380303437660233
+  - rid: 2042380303437660234
+  - rid: 2042380303437660235
+  - rid: 2042380303437660236
+  references:
+    version: 2
+    RefIds:
+    - rid: 2042380301832028224
+      type: {class: RootNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: e11e94f8-73bc-4a3d-89bd-01304b3b3b38
+        position: {x: 363, y: -40}
+        child:
+          rid: 2042380303437660235
+    - rid: 2042380303437660231
+      type: {class: Sequence, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: f94f9041-7a90-4853-b6fe-6189f8585ed1
+        position: {x: 285, y: 204}
+        children:
+        - rid: 2042380303437660233
+        - rid: 2042380303437660234
+    - rid: 2042380303437660233
+      type: {class: HasEnoughResources, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 5b8af200-d3a7-4a15-a686-adc243a4ccd2
+        position: {x: 143, y: 362}
+        cost: 50
+    - rid: 2042380303437660234
+      type: {class: DebugLogNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: ee212184-5f36-45ff-9d8d-93884e9ea49e
+        position: {x: 410, y: 374}
+        message: Se compra no problem
+    - rid: 2042380303437660235
+      type: {class: Selector, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: a2f1e72d-b254-4af6-a8c6-b4c8745e9e7b
+        position: {x: 352, y: 75}
+        children:
+        - rid: 2042380303437660231
+        - rid: 2042380303437660236
+    - rid: 2042380303437660236
+      type: {class: DebugLogNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: c2020a21-bd34-45b4-a6e6-b7a526dbe14d
+        position: {x: 522, y: 204}
+        message: "Nada mi rey, consigue m\xE1s pasta"

@@ -1,0 +1,13 @@
+/* Pega esto en tu archivo .uss vacío */
+
+.node-view.running {
+    background-color: rgb(51, 102, 153);
+}
+
+.node-view.success {
+    background-color: rgb(51, 153, 51);
+}
+
+.node-view.failure {
+    background-color: rgb(153, 51, 51);
+}
