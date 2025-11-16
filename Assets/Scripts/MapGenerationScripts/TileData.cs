@@ -9,6 +9,8 @@ public class TileData : MonoBehaviour
     public float weight;
     public List<TileData> neighbors = new List<TileData>();
     public Vector2Int gridPosition;
+    public GameObject outline;
+    public bool hasUnit = false;
     
     public void Initialize(int type, bool canWalk, float cost, int row, int col)
     {
@@ -22,5 +24,11 @@ public class TileData : MonoBehaviour
     {
         if (!neighbors.Contains(neighbor))
             neighbors.Add(neighbor);
+    }
+
+    public void SetOutline(bool state)
+    {
+        if(outline == null) outline = transform.Find("Outline").gameObject;
+        outline.SetActive(state);
     }
 }
