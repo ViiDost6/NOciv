@@ -138,4 +138,9 @@ public class MapGenerator : MonoBehaviour
     {
         return tileGrid.TryGetValue(position, out TileData tile) ? tile : null;
     }
+
+    public Dictionary<Vector2Int, TileData> GetTileGrid()
+    {
+        return tileGrid;
+    }
 }
