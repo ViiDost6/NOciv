@@ -21,7 +21,9 @@ public class Turns : MonoBehaviour
     {
 
         if (turno % 2 != 0)
+        {
             OnTurnStartJ1?.Invoke();
+        }
         else
             OnTurnStartJ2?.Invoke();
     }
