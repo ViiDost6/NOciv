@@ -29,10 +29,14 @@ public class Turns : MonoBehaviour
     }
 
     public void TerminarTurno()
-    {
+    {   Debug.Log("Entro 0");
         turno++;
         if (turno % 2 != 0)
+        {
+            Debug.Log("Entro 1");
             texto.text = "Turno J1";
+            CommanderAI.Instance.ExecuteCommanderTurn();
+        }
         else
         {
             texto.text = "Turno J2";
