@@ -65,6 +65,8 @@ public class UnitGenerator : MonoBehaviour
             {
                 u.isPlayerUnit = data.isPlayerUnit;
                 u.currentTile = tile;
+                u.movesLeftThisTurn = u.movesTotal;
+                u.hasAttackedThisTurn = false;
                 tile.hasUnit = true;
 
                 u.outline = newUnit.transform.Find("Outline").gameObject;

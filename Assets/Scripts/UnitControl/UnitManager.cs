@@ -1,7 +1,9 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using UnityEngine.EventSystems;
 using System.Collections.Generic;
+using System.Collections;
 
 public class UnitManager : MonoBehaviour
 {
@@ -117,6 +119,7 @@ public class UnitManager : MonoBehaviour
             moveBtn.onClick.AddListener(() => ToggleMoveMode());
         }
 
+        moveBtn.GetComponentInChildren<TMP_Text>().text = $"Moves: {currentUnitSelected.movesLeftThisTurn}";
         UpdateButtonVisual();
     }
 
@@ -152,6 +155,7 @@ public class UnitManager : MonoBehaviour
     {
         if (attackBtn != null)
         {
+            if(currentUnitSelected.hasAttackedThisTurn) attackBtn.interactable = false;
             bool active = currentState == State.SelectingAttack;
             ColorBlock cb = attackBtn.colors;
             cb.normalColor = active ? Color.red : Color.white;
@@ -162,10 +166,12 @@ public class UnitManager : MonoBehaviour
 
         if (moveBtn != null)
         {
+            if(currentUnitSelected.movesLeftThisTurn <= 0) moveBtn.interactable = false;
             bool active = currentState == State.SelectingMovement;
             ColorBlock cb = moveBtn.colors;
             cb.normalColor = active ? Color.grey : Color.white;
             moveBtn.colors = cb;
+            moveBtn.GetComponentInChildren<TMP_Text>().text = $"Moves: {currentUnitSelected.movesLeftThisTurn}";
             Image img = moveBtn.GetComponent<Image>();
             if (img != null) img.color = cb.normalColor;
         }
@@ -203,8 +209,6 @@ public class UnitManager : MonoBehaviour
 
     public void Attack(Unit attacker, Unit defender)
     {
-        Debug.Log($"Daño: {attacker.damage}. Vida inicial: {defender.health}");
-
         if(defender.hasArmor && !attacker.hasPiercing)
         {
             defender.health -= attacker.damage - 1;
@@ -213,9 +217,8 @@ public class UnitManager : MonoBehaviour
         {
             defender.health -= attacker.damage;
         }
-        
-        Debug.Log($"Vida restante: {defender.health}");
 
+        attacker.hasAttackedThisTurn = true;
         if(defender.health <= 0) defender.Death();
     }
 
@@ -256,11 +259,37 @@ public class UnitManager : MonoBehaviour
     {
         if (unit == null || tile == null) return;
 
-        unit.transform.position = new Vector3(tile.transform.position.x, tile.transform.position.y, -1);
+        if(unit.currentTile.tileType == 2) unit.attackRange--;
+        if(tile.tileType == 2) unit.attackRange++;
+
         unit.currentTile.hasUnit = false;
         unit.currentTile = tile;
         tile.hasUnit = true;
         tile.SetOutline(false);
+
+        if((unit.unitType == Unit.UnitType.Artillery && tile.tileType == 2) || 
+           (unit.unitType == Unit.UnitType.Artillery &&unit.currentTile.tileType == 2)) unit.movesLeftThisTurn -= 2;
+        else unit.movesLeftThisTurn -= 1;
+        if(unit.movesLeftThisTurn < 0) unit.movesLeftThisTurn = 0;
+
+        Vector3 endPos = new Vector3(tile.transform.position.x, tile.transform.position.y, -1);
+        StartCoroutine(MovementCoroutine(unit, endPos));
+    }
+
+    private IEnumerator MovementCoroutine(Unit unit, Vector3 endPos)
+    {
+        Vector3 startPos = unit.transform.position;
+        float duration = 0.5f;
+        float elapsed = 0f;
+
+        while(elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            unit.transform.position = Vector3.Lerp(startPos, endPos, t);
+            yield return null;
+        }
+        unit.transform.position = endPos;
     }
 
     private List<TileData> CalculateTilesInRange(TileData startTile, int range)

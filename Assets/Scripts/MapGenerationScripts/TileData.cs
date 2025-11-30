@@ -31,4 +31,12 @@ public class TileData : MonoBehaviour
         if(outline == null) outline = transform.Find("Outline").gameObject;
         outline.SetActive(state);
     }
+    
+    public void SetOutline(bool state, Color color)
+    {
+        if(outline == null) outline = transform.Find("Outline").gameObject;
+        SpriteRenderer sr = outline.GetComponent<SpriteRenderer>();
+        sr.color = color;
+        outline.SetActive(state);
+    }
 }

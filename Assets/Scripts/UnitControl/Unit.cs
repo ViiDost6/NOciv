@@ -15,9 +15,10 @@ public class Unit : MonoBehaviour
 
     public GameObject outline;
     public GameObject attackRangeIndicator;
-    public bool isPlayerUnit = true;
+    public bool isPlayerUnit;
     public List<TileData> reachableTiles = new List<TileData>();
     public int movesLeftThisTurn;
+    public bool hasAttackedThisTurn;
 
     public TileData currentTile;
 
