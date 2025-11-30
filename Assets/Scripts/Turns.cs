@@ -35,7 +35,6 @@ public class Turns : MonoBehaviour
         {
             Debug.Log("Entro 1");
             texto.text = "Turno J1";
-            CommanderAI.Instance.ExecuteCommanderTurn();
         }
         else
         {
