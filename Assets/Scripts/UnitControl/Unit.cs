@@ -3,12 +3,20 @@ using UnityEngine;
 
 public class Unit : MonoBehaviour
 {
+    public enum UnitType {Infantry, HeavyInfantry, Artillery}
+    public UnitType unitType;
+    public int cost;
+    public int movesTotal;
+    public int attackRange;
+    public int health;
+    public int damage;
+    public bool hasPiercing;
+    public bool hasArmor;
+
     public GameObject outline;
     public GameObject attackRangeIndicator;
     public bool isPlayerUnit = true;
-    public int attackRange = 2;
     public List<TileData> reachableTiles = new List<TileData>();
-    public int movesTotal = 3;
     public int movesLeftThisTurn;
 
     public TileData currentTile;
@@ -17,5 +25,11 @@ public class Unit : MonoBehaviour
     {
         if(outline == null) outline = transform.Find("Outline").gameObject;
         outline.SetActive(state);
+    }
+
+    public void Death()
+    {
+        currentTile.hasUnit = false;
+        Destroy(gameObject);
     }
 }

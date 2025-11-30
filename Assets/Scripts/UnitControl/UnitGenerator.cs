@@ -2,15 +2,16 @@ using UnityEngine;
 using System.Collections.Generic;
 public class UnitGenerator : MonoBehaviour
 {
+    public GameObject unitInfantryPrefab;
+    public GameObject unitHeavyInfantryPrefab;
+    public GameObject unitArtilleryPrefab;
+
     [System.Serializable]
     public class UnitSpawnData
     {
-        public GameObject unitPrefab;
         public Vector2Int gridPosition;
         public bool isPlayerUnit;
-        public int attackRange;
-        public int movesTotal;
-        // El resto de variables
+        public Unit.UnitType unitType;
     }
 
     public List<UnitSpawnData> unitsToSpawn = new List<UnitSpawnData>();
@@ -18,10 +19,11 @@ public class UnitGenerator : MonoBehaviour
 
     public void GenerateUnits()
     {
-        GameObject unitContainer = GameObject.Find("UnitGenerator");
+        GameObject unitContainer = GameObject.FindWithTag("UnitGenerator");
 
         for (int i = unitContainer.transform.childCount - 1; i >= 0; i--)
         {
+            unitContainer.transform.GetChild(i).GetComponent<Unit>().currentTile.hasUnit = false;
             DestroyImmediate(unitContainer.transform.GetChild(i).gameObject);
         }
 
@@ -30,7 +32,7 @@ public class UnitGenerator : MonoBehaviour
             TileData tile = null;
 
             TileData[] allTiles = Object.FindObjectsByType<TileData>(FindObjectsSortMode.None);
-            string searchName = $"Hex_{data.gridPosition.x}_{data.gridPosition.y}";
+            string searchName = $"Hex_{data.gridPosition.x}_{data.gridPosition.y}_";
 
             foreach (TileData t in allTiles)
             {
@@ -41,8 +43,21 @@ public class UnitGenerator : MonoBehaviour
                 }
             }
 
-            GameObject newUnit = Instantiate(data.unitPrefab, unitContainer.transform);
-            newUnit.name = $"Unit_{data.gridPosition.x}_{data.gridPosition.y}";
+            GameObject unitPrefab = null;
+            switch(data.unitType)
+            {
+                case Unit.UnitType.Infantry:
+                    unitPrefab = unitInfantryPrefab;
+                    break;
+                case Unit.UnitType.HeavyInfantry:
+                    unitPrefab = unitHeavyInfantryPrefab;
+                    break;
+                case Unit.UnitType.Artillery:
+                    unitPrefab = unitArtilleryPrefab;
+                    break;
+            }
+            GameObject newUnit = Instantiate(unitPrefab, unitContainer.transform);
+            newUnit.name = $"{data.unitType}_{data.gridPosition.x}_{data.gridPosition.y}";
             newUnit.transform.position = new Vector3(tile.transform.position.x, tile.transform.position.y, -1);
 
             Unit u = newUnit.GetComponent<Unit>();
@@ -51,8 +66,7 @@ public class UnitGenerator : MonoBehaviour
                 u.isPlayerUnit = data.isPlayerUnit;
                 u.currentTile = tile;
                 tile.hasUnit = true;
-                u.attackRange = data.attackRange;
-                u.movesTotal = data.movesTotal;
+
                 u.outline = newUnit.transform.Find("Outline").gameObject;
                 u.attackRangeIndicator = newUnit.transform.Find("AttackRange").gameObject;
 

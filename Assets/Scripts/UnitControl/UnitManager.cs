@@ -3,16 +3,16 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using System.Collections.Generic;
 
-public class UnitSelectionManager : MonoBehaviour
+public class UnitManager : MonoBehaviour
 {
-    public static UnitSelectionManager Instance;
+    public static UnitManager Instance;
     public GameObject unitActionUIPrefab;
 
     private enum State { NoSelection, UnitSelected, SelectingMovement, SelectingAttack }
 
-    private Unit currentHover = null;
+    private Unit currentUnitHover = null;
     private TileData currentTileHover = null;
-    private Unit currentSelected = null;
+    private Unit currentUnitSelected = null;
     private GameObject currentUI = null;
     private State currentState = State.NoSelection;
 
@@ -41,13 +41,13 @@ public class UnitSelectionManager : MonoBehaviour
         RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero);
         Unit unitHit = hit.collider != null ? hit.collider.GetComponent<Unit>() : null;
 
-        if (unitHit == currentHover) return;
+        if (unitHit == currentUnitHover) return;
 
-        if (currentHover != null && currentHover != currentSelected) currentHover.SetOutline(false);
+        if (currentUnitHover != null && currentUnitHover != currentUnitSelected) currentUnitHover.SetOutline(false);
 
-        currentHover = unitHit;
+        currentUnitHover = unitHit;
 
-        if (currentHover != null && IsSelectable(currentHover) && currentHover != currentSelected) currentHover.SetOutline(true);
+        if (currentUnitHover != null && IsSelectable(currentUnitHover) && currentUnitHover != currentUnitSelected) currentUnitHover.SetOutline(true);
     }
 
     private void UpdateNoSelection()
@@ -56,9 +56,9 @@ public class UnitSelectionManager : MonoBehaviour
 
         if (EventSystem.current.IsPointerOverGameObject()) return;
 
-        if (currentHover != null && IsSelectable(currentHover) && Input.GetMouseButtonDown(0))
+        if (currentUnitHover != null && IsSelectable(currentUnitHover) && Input.GetMouseButtonDown(0))
         {
-            currentSelected = currentHover;
+            currentUnitSelected = currentUnitHover;
             currentState = State.UnitSelected;
         }
     }
@@ -69,31 +69,31 @@ public class UnitSelectionManager : MonoBehaviour
 
         if (EventSystem.current.IsPointerOverGameObject()) return;
 
-        if ((currentHover == null || currentHover == currentSelected) && Input.GetMouseButtonDown(0))
+        if ((currentUnitHover == null || currentUnitHover == currentUnitSelected) && Input.GetMouseButtonDown(0))
         {
-            currentSelected.SetOutline(false);
-            currentSelected = null;
+            currentUnitSelected.SetOutline(false);
+            currentUnitSelected = null;
             DestroyUI();
             currentState = State.NoSelection;
             return;
         }
 
-        if (currentHover != null && IsSelectable(currentHover) && Input.GetMouseButtonDown(0))
+        if (currentUnitHover != null && IsSelectable(currentUnitHover) && Input.GetMouseButtonDown(0))
         {
-            currentSelected.SetOutline(false);
-            currentSelected = currentHover;
-            currentSelected.SetOutline(true);
+            currentUnitSelected.SetOutline(false);
+            currentUnitSelected = currentUnitHover;
+            currentUnitSelected.SetOutline(true);
             DestroyUI();
         }
 
-        if (currentUI == null && currentSelected != null) CreateUIForSelected();
+        if (currentUI == null && currentUnitSelected != null) CreateUIForSelected();
     }
 
     private void CreateUIForSelected()
     {
-        currentUI = Instantiate(unitActionUIPrefab, currentSelected.transform);
+        currentUI = Instantiate(unitActionUIPrefab, currentUnitSelected.transform);
 
-        currentSelected.reachableTiles = CalculateTilesInRange(currentSelected.currentTile, currentSelected.attackRange);
+        currentUnitSelected.reachableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.attackRange);
 
         Transform canvas = currentUI.transform.Find("Canvas");
         if (canvas == null)
@@ -124,12 +124,12 @@ public class UnitSelectionManager : MonoBehaviour
     {
         if (currentState == State.SelectingAttack)
         {
-            currentSelected.attackRangeIndicator.SetActive(false);
+            currentUnitSelected.attackRangeIndicator.SetActive(false);
             currentState = State.UnitSelected;
         }
         else
         {
-            currentSelected.attackRangeIndicator.SetActive(true);
+            currentUnitSelected.attackRangeIndicator.SetActive(true);
             currentState = State.SelectingAttack;
         }
 
@@ -141,7 +141,7 @@ public class UnitSelectionManager : MonoBehaviour
         if (currentState == State.SelectingMovement) currentState = State.UnitSelected;
         else
         {
-            if(currentState == State.SelectingAttack) currentSelected.attackRangeIndicator.SetActive(false);
+            if(currentState == State.SelectingAttack) currentUnitSelected.attackRangeIndicator.SetActive(false);
             currentState = State.SelectingMovement;
         }
 
@@ -179,28 +179,44 @@ public class UnitSelectionManager : MonoBehaviour
         RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero);
         Unit enemyHit = hit.collider != null ? hit.collider.GetComponent<Unit>() : null;
 
-        if (currentHover != null && currentHover != currentSelected) currentHover.SetOutline(false);
+        if (currentUnitHover != null && currentUnitHover != currentUnitSelected) currentUnitHover.SetOutline(false);
 
-        currentHover = enemyHit;
+        currentUnitHover = enemyHit;
 
-        if (currentHover == null || currentHover.isPlayerUnit) return;
+        if (currentUnitHover == null || currentUnitHover.isPlayerUnit) return;
 
-        if (IsSelectable(currentHover))
+        if (IsSelectable(currentUnitHover))
         {
-            currentHover.SetOutline(true);
+            currentUnitHover.SetOutline(true);
 
             if (Input.GetMouseButtonDown(0))
             {
-                Debug.Log($"Atacar unidad: {currentHover.name}");
+                Attack(currentUnitSelected, currentUnitHover);
 
-                // Implementar ataque
-
-                currentSelected.attackRangeIndicator.SetActive(false);
+                currentUnitSelected.attackRangeIndicator.SetActive(false);
                 currentState = State.UnitSelected;
                 UpdateButtonVisual();
-                currentHover.SetOutline(false);
+                currentUnitHover.SetOutline(false);
             }
         }
+    }
+
+    public void Attack(Unit attacker, Unit defender)
+    {
+        Debug.Log($"Daño: {attacker.damage}. Vida inicial: {defender.health}");
+
+        if(defender.hasArmor && !attacker.hasPiercing)
+        {
+            defender.health -= attacker.damage - 1;
+        }
+        else
+        {
+            defender.health -= attacker.damage;
+        }
+        
+        Debug.Log($"Vida restante: {defender.health}");
+
+        if(defender.health <= 0) defender.Death();
     }
 
     private void UpdateSelectingMovement()
@@ -217,21 +233,21 @@ public class UnitSelectionManager : MonoBehaviour
 
         currentTileHover = tileHit;
 
-        if (tileHit == null || currentSelected == null) return;
+        if (tileHit == null || currentUnitSelected == null) return;
 
         // Comprobar si el tile está en los alcanzables
-        if (currentSelected.currentTile.neighbors.Contains(tileHit) && !tileHit.hasUnit)
+        if (currentUnitSelected.currentTile.neighbors.Contains(tileHit) && !tileHit.hasUnit)
         {
             tileHit.SetOutline(true);
 
             if (Input.GetMouseButtonDown(0))
             {
-                MoveUnitToTile(currentSelected, tileHit);
+                MoveUnitToTile(currentUnitSelected, tileHit);
                 currentState = State.UnitSelected;
                 UpdateButtonVisual();
 
                 // Recalcular tiles de movimiento si quieres mostrar de nuevo
-                currentSelected.reachableTiles = CalculateTilesInRange(tileHit, currentSelected.attackRange);
+                currentUnitSelected.reachableTiles = CalculateTilesInRange(tileHit, currentUnitSelected.attackRange);
             }
         }
     }
@@ -282,7 +298,7 @@ public class UnitSelectionManager : MonoBehaviour
     public bool IsSelectable(Unit unit)
     {
         if(currentState != State.SelectingAttack) return unit.isPlayerUnit;
-        else return !unit.isPlayerUnit && currentSelected.reachableTiles.Contains(unit.currentTile);
+        else return !unit.isPlayerUnit && currentUnitSelected.reachableTiles.Contains(unit.currentTile);
     }
 
     private void DestroyUI()
