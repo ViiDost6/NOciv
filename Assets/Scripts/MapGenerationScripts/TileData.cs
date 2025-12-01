@@ -11,6 +11,7 @@ public class TileData : MonoBehaviour
     public Vector2Int gridPosition;
     public GameObject outline;
     public bool hasUnit = false;
+    public Building currentBuilding = null;
     
     public void Initialize(int type, bool canWalk, float cost, int row, int col)
     {
@@ -31,7 +32,7 @@ public class TileData : MonoBehaviour
         if(outline == null) outline = transform.Find("Outline").gameObject;
         outline.SetActive(state);
     }
-    
+
     public void SetOutline(bool state, Color color)
     {
         if(outline == null) outline = transform.Find("Outline").gameObject;

@@ -259,6 +259,9 @@ public class UnitManager : MonoBehaviour
     {
         if (unit == null || tile == null) return;
 
+        if(unit.unitType == Unit.UnitType.Artillery && (tile.tileType == 2 || unit.currentTile.tileType == 2)) unit.movesLeftThisTurn -= 2;
+        else unit.movesLeftThisTurn--;
+
         if(unit.currentTile.tileType == 2) unit.attackRange--;
         if(tile.tileType == 2) unit.attackRange++;
 
@@ -267,10 +270,13 @@ public class UnitManager : MonoBehaviour
         tile.hasUnit = true;
         tile.SetOutline(false);
 
-        if((unit.unitType == Unit.UnitType.Artillery && tile.tileType == 2) || 
-           (unit.unitType == Unit.UnitType.Artillery &&unit.currentTile.tileType == 2)) unit.movesLeftThisTurn -= 2;
-        else unit.movesLeftThisTurn -= 1;
         if(unit.movesLeftThisTurn < 0) unit.movesLeftThisTurn = 0;
+
+        if(tile.currentBuilding != null)
+        {
+            tile.currentBuilding.hasBeenClaimed = unit.isPlayerUnit ? 1 : 2;
+            tile.currentBuilding.UpdateState();
+        }
 
         Vector3 endPos = new Vector3(tile.transform.position.x, tile.transform.position.y, -1);
         StartCoroutine(MovementCoroutine(unit, endPos));

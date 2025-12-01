@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2432436045258632736}
   - component: {fileID: 1624970872234625860}
   - component: {fileID: 4852311912174737138}
+  - component: {fileID: 7646403565929445267}
   m_Layer: 0
   m_Name: Recurso
   m_TagString: Untagged
@@ -27,8 +28,8 @@ Transform:
   m_GameObject: {fileID: 540483219988816720}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0.3, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2544599341212746823}
@@ -80,8 +81,8 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_Sprite: {fileID: -712631045867808456, guid: b670ab75dde984907b8570040daa08c5, type: 3}
+  m_SortingOrder: 1
+  m_Sprite: {fileID: -2135585597343286014, guid: eed45a33cd08446c8b88325cf82fc52f, type: 3}
   m_Color: {r: 0, g: 1, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -130,7 +131,7 @@ PolygonCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 0.8828125}
+    oldSize: {x: 0.890625, y: 1}
     newSize: {x: 1, y: 0.8828125}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -138,13 +139,26 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: -0.25, y: 0.43359375}
-      - {x: -0.5, y: 0}
-      - {x: -0.25, y: -0.43359375}
-      - {x: 0.25, y: -0.43359375}
-      - {x: 0.5, y: 0}
-      - {x: 0.25, y: 0.43359375}
+    - - {x: -0.0024905354, y: 0.5063907}
+      - {x: -0.44418904, y: 0.25721574}
+      - {x: -0.4441251, y: -0.25645462}
+      - {x: -0.0047891736, y: -0.50881726}
+      - {x: 0.4466156, y: -0.25478917}
+      - {x: 0.439272, y: 0.25402802}
   m_UseDelaunayMesh: 0
+--- !u!114 &7646403565929445267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 540483219988816720}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99e98d6a95af311419b28d9750c210a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Base
+  hasBeenClaimed: 0
 --- !u!1 &6136220160984654756
 GameObject:
   m_ObjectHideFlags: 0

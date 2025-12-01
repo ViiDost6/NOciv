@@ -282,9 +282,11 @@ public class StructureManager : MonoBehaviour
         if (tile == null) return;
         
         Vector3 worldPosition = tile.transform.position;
-        GameObject tower = Instantiate(towerPrefab, worldPosition, Quaternion.identity);
+        GameObject tower = Instantiate(towerPrefab, worldPosition + towerPrefab.transform.position, Quaternion.identity);
         tower.transform.SetParent(transform);
         tower.name = $"{owner}_Tower_{position.x}_{position.y}";
+        tile.currentBuilding = tower.GetComponent<Building>();
+        tile.currentBuilding.UpdateState();
         placedStructures.Add(tower);
     }
     
@@ -294,9 +296,11 @@ public class StructureManager : MonoBehaviour
         if (tile == null) return;
         
         Vector3 worldPosition = tile.transform.position;
-        GameObject resource = Instantiate(resourcePrefab, worldPosition, Quaternion.identity);
+        GameObject resource = Instantiate(resourcePrefab, worldPosition + resourcePrefab.transform.position, Quaternion.identity);
         resource.transform.SetParent(transform);
         resource.name = $"Resource_{position.x}_{position.y}";
+        tile.currentBuilding = resource.GetComponent<Building>();
+        tile.currentBuilding.UpdateState();
         placedStructures.Add(resource);
     }
     
@@ -304,6 +308,7 @@ public class StructureManager : MonoBehaviour
     {
         foreach (GameObject structure in placedStructures)
         {
+            
             if (structure != null)
                 DestroyImmediate(structure);
         }
