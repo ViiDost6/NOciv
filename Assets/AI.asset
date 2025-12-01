@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f68091db895f282b5bea84f96e0a0711, type: 3}
+  m_Name: AI
+  m_EditorClassIdentifier: Assembly-CSharp::BehaviourTree
+  rootNode:
+    rid: 2042380929226244169
+  nodes:
+  - rid: 2042380929226244169
+  - rid: 2042380929226244170
+  - rid: 2042380929226244171
+  - rid: 2042380929226244172
+  - rid: 2042380929226244173
+  - rid: 2042380929226244174
+  - rid: 2042380929226244175
+  - rid: 2042380929226244177
+  references:
+    version: 2
+    RefIds:
+    - rid: 2042380929226244169
+      type: {class: RootNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 8261a91d-ecc2-4bc6-b352-674a445a0ffd
+        position: {x: 308, y: 77}
+        child:
+          rid: 2042380929226244170
+    - rid: 2042380929226244170
+      type: {class: Selector, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: ea61f002-50fd-47ea-921a-48e66c827131
+        position: {x: 291, y: 208}
+        children:
+        - rid: 2042380929226244171
+        - rid: 2042380929226244172
+    - rid: 2042380929226244171
+      type: {class: Sequence, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 9117fb4b-feb3-4dd0-ad33-f79abc2a9698
+        position: {x: 170, y: 361}
+        children:
+        - rid: 2042380929226244173
+        - rid: 2042380929226244174
+    - rid: 2042380929226244172
+      type: {class: Sequence, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 012610c2-e2c2-43c2-affd-4426ae93293b
+        position: {x: 402, y: 353}
+        children:
+        - rid: 2042380929226244175
+        - rid: 2042380929226244177
+    - rid: 2042380929226244173
+      type: {class: CheckCanAttackNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 1db5652d-c432-4241-bf85-4288064b9dc2
+        position: {x: 24, y: 456}
+    - rid: 2042380929226244174
+      type: {class: AttackBestTargetNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: b7ea6b7b-18b3-43bf-8610-61562ba30522
+        position: {x: 244, y: 463}
+    - rid: 2042380929226244175
+      type: {class: CheckCanMoveNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 737a907b-2c95-4e57-b5e7-3a42ba933751
+        position: {x: 467, y: 459}
+    - rid: 2042380929226244177
+      type: {class: MoveToStrategicPositionNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: e79dd143-bd2d-427f-9f6e-6a22f08960ab
+        position: {x: 650, y: 461}

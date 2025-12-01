@@ -105,4 +105,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TileSettings
   tileType: 1
   walkable: 0
-  weight: 999
+  canHide: 0
+  weight: 0
+  neighbors: []
+  gridPosition: {x: 0, y: 0}
+  outline: {fileID: 0}
+  hasUnit: 0

@@ -4,192 +4,273 @@ using System.Collections.Generic;
 public class InfluenceMap : MonoBehaviour
 {
     public MapGenerator mapGenerator;
-    public StructureManager structureManager;
-    [Range(0.1f, 5f)] public float baseInfluenceDecay = 1.0f;
-    [Range(1, 50)] public int maxInfluenceDistance = 20; // Aumentar distancia máxima
+    [Range(1, 50)] public int maxInfluenceDistance = 10;
     
-    private float[,] playerInfluence;
-    private float[,] enemyInfluence;
-    private float[,] resourceInfluence;
-    private float[,] strategicInfluence;
-    private float[,] combinedInfluence;
+    // Capas de influencia
+    private float[,] baseInfluence;      // Influencia base del terreno
+    private float[,] objectiveInfluence; // Influencia de objetivos
+    private float[,] menaceInfluence;    // Influencia de amenazas
+    private float[,] combinedInfluence;  // Influencia combinada final
     
-    private Dictionary<string, float> layerWeights = new Dictionary<string, float>()
-    {
-        {"player", 2.0f},
-        {"enemy", -3.0f},
-        {"resource", 1.5f},
-        {"strategic", 1.0f},
-        {"terrain", 0.5f}
-    };
+    private List<Vector2Int> objectivePositions = new List<Vector2Int>();
+    private List<Vector2Int> menacePositions = new List<Vector2Int>();
+    
+    // Pesos para combinar las influencias
+    [Header("Influence Weights")]
+    public float baseWeight = 0.3f;
+    public float objectiveWeight = 1.0f;
+    public float menaceWeight = 1.0f;
+    
+    [Header("Influence Intensity Settings")]
+    [Range(1, 20)] public float maxSourceIntensity = 10f;
+    
+    [Header("Terrain Propagation Settings")]
+    public bool useTerrainPropagation = true;
+    public float difficultTerrainPenalty = 0.3f;
+    public float favorableTerrainBonus = 1.5f;
     
     public void GenerateInfluenceMap()
     {
-        Debug.Log("INFLUENCE MAP: Starting influence map generation");
-        
-        if (structureManager == null)
-        {
-            Debug.LogError("INFLUENCE MAP: StructureManager is null");
-            return;
-        }
-        
         if (mapGenerator == null)
         {
-            Debug.LogError("INFLUENCE MAP: MapGenerator is null");
+            Debug.LogError("InfluenceMap: MapGenerator is null");
             return;
         }
         
-        Debug.Log("INFLUENCE MAP: Map dimensions: " + mapGenerator.mapWidth + "x" + mapGenerator.mapHeight);
-        Debug.Log("INFLUENCE MAP: Player towers: " + structureManager.PlayerTowerPositions.Count);
-        Debug.Log("INFLUENCE MAP: Enemy towers: " + structureManager.EnemyTowerPositions.Count);
-        Debug.Log("INFLUENCE MAP: Resources: " + structureManager.ResourcePositions.Count);
+        Debug.Log($"InfluenceMap: Starting generation with distance {maxInfluenceDistance}");
         
-        InitializeMaps();
-        CalculatePlayerInfluence();
-        CalculateEnemyInfluence();
-        CalculateResourceInfluence();
-        CalculateStrategicInfluence();
-        CalculateTerrainInfluence();
+        FindAllObjectivesAndMenaces();
+        InitializeInfluenceLayers();
+        
+        CalculateBaseInfluence();
+        CalculateObjectiveInfluence();
+        CalculateMenaceInfluence();
         CombineAllInfluences();
         
-        Debug.Log("INFLUENCE MAP: Influence maps generated successfully");
-        DebugInfluenceStats();
+        Debug.Log($"InfluenceMap: Complete - {objectivePositions.Count} objectives, {menacePositions.Count} menaces");
     }
     
-    void DebugInfluenceStats()
+    void FindAllObjectivesAndMenaces()
     {
-        if (combinedInfluence == null) return;
+        objectivePositions.Clear();
+        menacePositions.Clear();
         
-        float minInfluence = float.MaxValue;
-        float maxInfluence = float.MinValue;
-        int positiveTiles = 0;
-        int negativeTiles = 0;
-        int neutralTiles = 0;
-        
-        for (int y = 0; y < mapGenerator.mapHeight; y++)
+        // Buscar objetivos en escena
+        GameObject[] objectives = GameObject.FindGameObjectsWithTag("Objective");
+        foreach (GameObject obj in objectives)
         {
-            for (int x = 0; x < mapGenerator.mapWidth; x++)
+            Vector2Int? pos = GetObjectPosition(obj);
+            if (pos.HasValue)
             {
-                float influence = combinedInfluence[y, x];
-                minInfluence = Mathf.Min(minInfluence, influence);
-                maxInfluence = Mathf.Max(maxInfluence, influence);
-                
-                if (influence > 1f) positiveTiles++;
-                else if (influence < -1f) negativeTiles++;
-                else neutralTiles++;
+                objectivePositions.Add(pos.Value);
+                Debug.Log($"InfluenceMap: Objective at {pos.Value}");
             }
         }
         
-        Debug.Log("INFLUENCE MAP: Influence statistics:");
-        Debug.Log("INFLUENCE MAP:   Min: " + minInfluence.ToString("F2"));
-        Debug.Log("INFLUENCE MAP:   Max: " + maxInfluence.ToString("F2"));
-        Debug.Log("INFLUENCE MAP:   Positive tiles: " + positiveTiles);
-        Debug.Log("INFLUENCE MAP:   Negative tiles: " + negativeTiles);
-        Debug.Log("INFLUENCE MAP:   Neutral tiles: " + neutralTiles);
+        // Buscar amenazas en escena
+        GameObject[] menaces = GameObject.FindGameObjectsWithTag("Menace");
+        foreach (GameObject obj in menaces)
+        {
+            Vector2Int? pos = GetObjectPosition(obj);
+            if (pos.HasValue)
+            {
+                menacePositions.Add(pos.Value);
+                Debug.Log($"InfluenceMap: Menace at {pos.Value}");
+            }
+        }
     }
     
-    void InitializeMaps()
+    Vector2Int? GetObjectPosition(GameObject obj)
+    {
+        if (obj == null) return null;
+        
+        // Buscar TileData en el objeto
+        TileData tileData = obj.GetComponent<TileData>();
+        if (tileData == null) tileData = obj.GetComponentInChildren<TileData>();
+        if (tileData == null) tileData = obj.GetComponentInParent<TileData>();
+        
+        if (tileData != null) return tileData.gridPosition;
+        
+        // Buscar tile mas cercano como fallback
+        return FindClosestTilePosition(obj.transform.position);
+    }
+    
+    Vector2Int? FindClosestTilePosition(Vector3 worldPos)
+    {
+        Dictionary<Vector2Int, TileData> tileGrid = mapGenerator.GetTileGrid();
+        if (tileGrid == null) return null;
+        
+        float closestDistance = float.MaxValue;
+        Vector2Int? closestPos = null;
+        
+        foreach (var kvp in tileGrid)
+        {
+            if (kvp.Value == null) continue;
+            
+            float distance = Vector3.Distance(worldPos, kvp.Value.transform.position);
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestPos = kvp.Key;
+            }
+        }
+        
+        return closestPos;
+    }
+    
+    void InitializeInfluenceLayers()
     {
         int height = mapGenerator.mapHeight;
         int width = mapGenerator.mapWidth;
         
-        playerInfluence = new float[height, width];
-        enemyInfluence = new float[height, width];
-        resourceInfluence = new float[height, width];
-        strategicInfluence = new float[height, width];
+        baseInfluence = new float[height, width];
+        objectiveInfluence = new float[height, width];
+        menaceInfluence = new float[height, width];
         combinedInfluence = new float[height, width];
+    }
+    
+    void CalculateBaseInfluence()
+    {
+        Debug.Log("InfluenceMap: Calculating base terrain influence");
         
-        Debug.Log("INFLUENCE MAP: Maps initialized: " + width + "x" + height);
-    }
-    
-    void CalculatePlayerInfluence()
-    {
-        Debug.Log("INFLUENCE MAP: Calculating player influence from " + structureManager.PlayerTowerPositions.Count + " towers");
-        foreach (Vector2Int towerPos in structureManager.PlayerTowerPositions)
+        for (int x = 0; x < mapGenerator.mapHeight; x++)
         {
-            PropagateInfluence(towerPos, 100f, playerInfluence, true);
-        }
-    }
-    
-    void CalculateEnemyInfluence()
-    {
-        Debug.Log("INFLUENCE MAP: Calculating enemy influence from " + structureManager.EnemyTowerPositions.Count + " towers");
-        foreach (Vector2Int towerPos in structureManager.EnemyTowerPositions)
-        {
-            PropagateInfluence(towerPos, -80f, enemyInfluence, true);
-        }
-    }
-    
-    void CalculateResourceInfluence()
-    {
-        Debug.Log("INFLUENCE MAP: Calculating resource influence from " + structureManager.ResourcePositions.Count + " resources");
-        foreach (Vector2Int resourcePos in structureManager.ResourcePositions)
-        {
-            PropagateInfluence(resourcePos, 60f, resourceInfluence, false);
-        }
-    }
-    
-    void CalculateStrategicInfluence()
-    {
-        Debug.Log("INFLUENCE MAP: Calculating strategic influence");
-        for (int y = 0; y < mapGenerator.mapHeight; y++)
-        {
-            for (int x = 0; x < mapGenerator.mapWidth; x++)
+            for (int y = 0; y < mapGenerator.mapWidth; y++)
             {
-                if (x >= 0 && x < mapGenerator.mapWidth && y >= 0 && y < mapGenerator.mapHeight)
+                Vector2Int pos = new Vector2Int(x, y);
+                TileData tile = mapGenerator.GetTileAtPosition(pos);
+                
+                if (tile != null)
                 {
-                    Vector2Int pos = new Vector2Int(x, y);
-                    float strategicValue = CalculatePositionStrategicValue(pos);
-                    strategicInfluence[y, x] = strategicValue;
+                    // Valor base del terreno considerando tipo y weight
+                    float terrainValue = GetTerrainBaseValue(tile.tileType, tile.weight);
+                    baseInfluence[x, y] = terrainValue;
+                    
+                    // Bonus por conectividad con tiles vecinos
+                    float connectivityBonus = CalculateConnectivityBonus(tile);
+                    baseInfluence[x, y] += connectivityBonus;
+                    
+                    // Bonus por proximidad al centro del mapa
+                    float centerBonus = CalculateCenterBonus(pos);
+                    baseInfluence[x, y] += centerBonus;
                 }
             }
         }
     }
     
-    void CalculateTerrainInfluence()
+    float GetTerrainBaseValue(int tileType, float tileWeight)
     {
-        Debug.Log("INFLUENCE MAP: Calculating terrain influence");
-        for (int y = 0; y < mapGenerator.mapHeight; y++)
+        float baseValueFromType = 0f;
+        
+        switch (tileType)
         {
-            for (int x = 0; x < mapGenerator.mapWidth; x++)
+            case 0: baseValueFromType = 1.0f; break;  // Tierra
+            case 1: baseValueFromType = 1.2f; break;  // Hierba
+            case 2: baseValueFromType = 0.5f; break;  // Agua
+            case 3: baseValueFromType = 1.5f; break;  // Montaña
+            default: baseValueFromType = 1.0f; break;
+        }
+        
+        // Weight 0 = indeseable, Weight 1 = neutral, Weight >1 = deseable
+        float weightContribution = (tileWeight - 1.0f) * 2.0f;
+        
+        return baseValueFromType + weightContribution;
+    }
+    
+    float CalculateConnectivityBonus(TileData tile)
+    {
+        int walkableNeighbors = 0;
+        foreach (TileData neighbor in tile.neighbors)
+        {
+            if (neighbor.walkable) walkableNeighbors++;
+        }
+        
+        // Puntos de choke (2-3 conexiones) son estrategicamente valiosos
+        if (walkableNeighbors >= 2 && walkableNeighbors <= 3)
+            return 0.8f;
+        // Intersecciones (4+ conexiones) tambien son valiosas
+        else if (walkableNeighbors >= 4)
+            return 0.5f;
+        
+        return 0f;
+    }
+    
+    float CalculateCenterBonus(Vector2Int pos)
+    {
+        float centerX = mapGenerator.mapWidth / 2f;
+        float centerY = mapGenerator.mapHeight / 2f;
+        float distToCenter = Vector2.Distance(new Vector2(pos.x, pos.y), new Vector2(centerX, centerY));
+        float maxDist = Mathf.Max(centerX, centerY);
+        
+        // Bonus decreciente segun distancia al centro
+        return 0.5f * (1f - distToCenter / maxDist);
+    }
+    
+    void CalculateObjectiveInfluence()
+    {
+        Debug.Log("InfluenceMap: Calculating objective influence");
+        
+        // Resetear capa de objetivos
+        for (int x = 0; x < mapGenerator.mapHeight; x++)
+        {
+            for (int y = 0; y < mapGenerator.mapWidth; y++)
             {
-                if (x >= 0 && x < mapGenerator.mapWidth && y >= 0 && y < mapGenerator.mapHeight)
-                {
-                    TileData tile = mapGenerator.GetTileAtPosition(new Vector2Int(x, y));
-                    if (tile != null)
-                    {
-                        float terrainWeight = GetTerrainInfluence(tile.tileType);
-                        combinedInfluence[y, x] += terrainWeight * layerWeights["terrain"];
-                    }
-                }
+                objectiveInfluence[x, y] = 0f;
             }
+        }
+        
+        // Propagar desde cada objetivo
+        foreach (Vector2Int objectivePos in objectivePositions)
+        {
+            PropagateInfluenceLinearStep(objectivePos, maxSourceIntensity, objectiveInfluence, true);
         }
     }
     
-    void PropagateInfluence(Vector2Int source, float baseStrength, float[,] influenceMap, bool usePathfinding)
+    void CalculateMenaceInfluence()
     {
-        int tilesInfluenced = 0;
+        Debug.Log("InfluenceMap: Calculating menace influence");
+        
+        // Resetear capa de amenazas
+        for (int x = 0; x < mapGenerator.mapHeight; x++)
+        {
+            for (int y = 0; y < mapGenerator.mapWidth; y++)
+            {
+                menaceInfluence[x, y] = 0f;
+            }
+        }
+        
+        // Propagar desde cada amenaza
+        foreach (Vector2Int menacePos in menacePositions)
+        {
+            PropagateInfluenceLinearStep(menacePos, maxSourceIntensity, menaceInfluence, false);
+        }
+    }
+    
+    void PropagateInfluenceLinearStep(Vector2Int source, float maxStrength, float[,] influenceLayer, bool isPositive)
+    {
         Queue<Vector2Int> queue = new Queue<Vector2Int>();
-        Dictionary<Vector2Int, float> influenceValues = new Dictionary<Vector2Int, float>();
+        Dictionary<Vector2Int, int> distances = new Dictionary<Vector2Int, int>();
         
         queue.Enqueue(source);
-        influenceValues[source] = baseStrength;
+        distances[source] = 0;
         
         while (queue.Count > 0)
         {
             Vector2Int current = queue.Dequeue();
-            float currentInfluence = influenceValues[current];
+            int currentDistance = distances[current];
             
-            if (current.x >= 0 && current.x < mapGenerator.mapWidth && 
-                current.y >= 0 && current.y < mapGenerator.mapHeight)
-            {
-                // MEJORA: Sumar en lugar de reemplazar para influencias superpuestas
-                influenceMap[current.y, current.x] += currentInfluence;
-                tilesInfluenced++;
-            }
+            // Calcular influencia lineal para esta distancia
+            float influenceAtDistance = CalculateLinearInfluence(maxStrength, currentDistance);
             
-            // MEJORA: Reducir el umbral mínimo para propagar más lejos
-            if (Mathf.Abs(currentInfluence) < 1f) continue;
+            // Aplicar factor de terreno si esta habilitado
+            float finalInfluence = useTerrainPropagation ? 
+                influenceAtDistance * GetTerrainPropagationFactor(current, isPositive) : 
+                influenceAtDistance;
+                
+            influenceLayer[current.x, current.y] += isPositive ? finalInfluence : -finalInfluence;
+            
+            // Detener propagacion si se alcanzo distancia maxima
+            if (currentDistance >= maxInfluenceDistance) continue;
             
             TileData currentTile = mapGenerator.GetTileAtPosition(current);
             if (currentTile != null)
@@ -198,140 +279,121 @@ public class InfluenceMap : MonoBehaviour
                 {
                     Vector2Int neighborPos = neighbor.gridPosition;
                     
-                    if (neighborPos.x >= 0 && neighborPos.x < mapGenerator.mapWidth && 
-                        neighborPos.y >= 0 && neighborPos.y < mapGenerator.mapHeight &&
-                        !influenceValues.ContainsKey(neighborPos))
+                    if (!distances.ContainsKey(neighborPos) && neighbor.walkable)
                     {
-                        // MEJORA: Permitir propagación a través de tiles no walkables con mayor penalización
-                        float distance = Vector2Int.Distance(source, neighborPos);
-                        if (distance <= maxInfluenceDistance)
-                        {
-                            float decay = CalculateInfluenceDecay(current, neighborPos, usePathfinding, neighbor.walkable);
-                            float neighborInfluence = currentInfluence * decay;
-                            
-                            // MEJORA: Aplicar penalización adicional por tiles no walkables
-                            if (!neighbor.walkable)
-                            {
-                                neighborInfluence *= 0.3f; // Reducir influencia en tiles no walkables
-                            }
-                            
-                            influenceValues[neighborPos] = neighborInfluence;
-                            queue.Enqueue(neighborPos);
-                        }
+                        distances[neighborPos] = currentDistance + 1;
+                        queue.Enqueue(neighborPos);
                     }
                 }
             }
         }
-        
-        Debug.Log("INFLUENCE MAP: Propagation from " + source + ": " + tilesInfluenced + " tiles influenced");
     }
     
-    // MEJORA: Añadir parámetro para tiles no walkables
-    float CalculateInfluenceDecay(Vector2Int from, Vector2Int to, bool usePathfinding, bool isWalkable = true)
+    float CalculateLinearInfluence(float maxStrength, int distance)
     {
-        float distance = Vector2Int.Distance(from, to);
+        if (distance > maxInfluenceDistance) return 0f;
         
-        // MEJORA: Usar decaimiento más suave
-        float baseDecay = Mathf.Exp(-distance / (baseInfluenceDecay * 2f)); // Reducir tasa de decaimiento
+        // Decaimiento lineal: (maxDistance - distance) / maxDistance * maxStrength
+        float linearFactor = (float)(maxInfluenceDistance - distance) / maxInfluenceDistance;
+        return linearFactor * maxStrength;
+    }
+    
+    float GetTerrainPropagationFactor(Vector2Int position, bool isPositiveInfluence)
+    {
+        TileData tile = mapGenerator.GetTileAtPosition(position);
+        if (tile == null) return 1.0f;
         
-        if (usePathfinding && !isWalkable)
+        float factor = 1.0f;
+        
+        // Terreno no transitable reduce drasticamente la propagacion
+        if (!tile.walkable)
         {
-            baseDecay *= 0.3f; // Penalización adicional para tiles no walkables
+            factor *= 0.1f;
         }
-        else if (usePathfinding)
+        else
         {
-            TileData toTile = mapGenerator.GetTileAtPosition(to);
-            if (toTile != null && toTile.weight > 1.0f)
+            // Modificar factor segun tipo de terreno
+            switch (tile.tileType)
             {
-                baseDecay *= 0.7f;
+                case 0: // Tierra - neutral
+                    factor = 1.0f;
+                    break;
+                case 1: // Hierba - favorable para influencia positiva
+                    factor = isPositiveInfluence ? favorableTerrainBonus : 1.0f;
+                    break;
+                case 2: // Agua - dificil para cualquier influencia
+                    factor = difficultTerrainPenalty;
+                    break;
+                case 3: // Montaña - favorable para positiva, dificil para negativa
+                    factor = isPositiveInfluence ? favorableTerrainBonus : difficultTerrainPenalty;
+                    break;
+            }
+            
+            // Solo objetivos usan el weight del terreno para propagacion
+            // Amenazas ignoran el weight y se propagan uniformemente
+            if (isPositiveInfluence)
+            {
+                factor *= tile.weight;
             }
         }
         
-        return baseDecay;
-    }
-    
-    float CalculatePositionStrategicValue(Vector2Int pos)
-    {
-        TileData tile = mapGenerator.GetTileAtPosition(pos);
-        if (tile == null) return 0f;
-        
-        float value = 0f;
-        
-        // MEJORA: Valor estratégico basado en conectividad
-        int walkableNeighbors = 0;
-        foreach (TileData neighbor in tile.neighbors)
-        {
-            if (neighbor.walkable) walkableNeighbors++;
-        }
-        
-        // MEJORA: Valorar más los puntos de choke (pocas conexiones) y cruces (muchas conexiones)
-        if (walkableNeighbors <= 2)
-            value += 40f; // Puntos de choke - muy valiosos
-        else if (walkableNeighbors >= 6)
-            value += 25f; // Intersecciones - valiosas
-        else if (walkableNeighbors >= 4)
-            value += 15f; // Puntos normales
-        
-        // MEJORA: Valorar proximidad a recursos
-        float minResourceDist = float.MaxValue;
-        foreach (Vector2Int resourcePos in structureManager.ResourcePositions)
-        {
-            float dist = Vector2Int.Distance(pos, resourcePos);
-            if (dist < minResourceDist) minResourceDist = dist;
-        }
-        
-        if (minResourceDist < 10f)
-        {
-            value += Mathf.Max(0, 25f - minResourceDist * 2f);
-        }
-        
-        return value;
-    }
-    
-    float GetTerrainInfluence(int tileType)
-    {
-        switch (tileType)
-        {
-            case 0: return 1.0f;  // Tierra - neutral
-            case 1: return 0.5f;  // Hierba - ligeramente positiva
-            case 2: return -0.5f; // Agua - ligeramente negativa
-            case 3: return -1.0f; // Montaña - muy negativa
-            default: return 0f;
-        }
+        return factor;
     }
     
     void CombineAllInfluences()
     {
-        for (int y = 0; y < mapGenerator.mapHeight; y++)
+        Debug.Log("InfluenceMap: Combining all influence layers");
+        
+        for (int x = 0; x < mapGenerator.mapHeight; x++)
         {
-            for (int x = 0; x < mapGenerator.mapWidth; x++)
+            for (int y = 0; y < mapGenerator.mapWidth; y++)
             {
-                combinedInfluence[y, x] = 
-                    playerInfluence[y, x] * layerWeights["player"] +
-                    enemyInfluence[y, x] * layerWeights["enemy"] +
-                    resourceInfluence[y, x] * layerWeights["resource"] +
-                    strategicInfluence[y, x] * layerWeights["strategic"] +
-                    combinedInfluence[y, x]; // Terrain influence ya añadido
+                // Combinar capas con sus pesos respectivos
+                combinedInfluence[x, y] = 
+                    (baseInfluence[x, y] * baseWeight) +
+                    (objectiveInfluence[x, y] * objectiveWeight) +
+                    (menaceInfluence[x, y] * menaceWeight);
+                
+                // Limitar valores extremos
+                combinedInfluence[x, y] = Mathf.Clamp(combinedInfluence[x, y], -maxSourceIntensity, maxSourceIntensity);
             }
         }
     }
     
-    // ... resto de métodos sin cambios
     public float GetInfluenceAt(Vector2Int position)
     {
-        if (combinedInfluence == null) 
+        if (combinedInfluence == null) return 0f;
+        if (position.x < 0 || position.x >= mapGenerator.mapHeight || 
+            position.y < 0 || position.y >= mapGenerator.mapWidth) return 0f;
+        
+        return combinedInfluence[position.x, position.y];
+    }
+    
+    public void GetInfluenceRange(out float min, out float max)
+    {
+        min = 0f;
+        max = 0f;
+        if (combinedInfluence == null) return;
+        
+        min = float.MaxValue;
+        max = float.MinValue;
+        
+        for (int x = 0; x < mapGenerator.mapHeight; x++)
         {
-            Debug.LogWarning("INFLUENCE MAP: InfluenceMap has not been generated");
-            return 0f;
+            for (int y = 0; y < mapGenerator.mapWidth; y++)
+            {
+                float influence = combinedInfluence[x, y];
+                min = Mathf.Min(min, influence);
+                max = Mathf.Max(max, influence);
+            }
         }
         
-        if (position.x < 0 || position.x >= mapGenerator.mapWidth || 
-            position.y < 0 || position.y >= mapGenerator.mapHeight)
+        // Rango minimo para visualizacion
+        if (Mathf.Abs(max - min) < 1f)
         {
-            return float.MinValue;
+            min = -5f;
+            max = 5f;
         }
-        
-        return combinedInfluence[position.y, position.x];
     }
     
     public Vector2Int GetBestMoveFrom(Vector2Int currentPosition)
@@ -347,9 +409,14 @@ public class InfluenceMap : MonoBehaviour
             if (neighbor.walkable)
             {
                 float influence = GetInfluenceAt(neighbor.gridPosition);
-                if (influence > bestInfluence)
+                
+                // Considerar weight del tile en la decision de movimiento
+                float weightBonus = (neighbor.weight - 1.0f) * 2.0f;
+                float adjustedInfluence = influence + weightBonus;
+                
+                if (adjustedInfluence > bestInfluence)
                 {
-                    bestInfluence = influence;
+                    bestInfluence = adjustedInfluence;
                     bestMove = neighbor.gridPosition;
                 }
             }
@@ -358,12 +425,73 @@ public class InfluenceMap : MonoBehaviour
         return bestMove;
     }
     
-    public void UpdateDynamicInfluence(Vector2Int position, float influenceChange)
+    // Metodos para debug y testing
+    public void DebugInfluenceBreakdown(Vector2Int position)
     {
-        if (position.x >= 0 && position.x < mapGenerator.mapWidth && 
-            position.y >= 0 && position.y < mapGenerator.mapHeight)
+        if (baseInfluence == null || objectiveInfluence == null || menaceInfluence == null) return;
+        
+        TileData tile = mapGenerator.GetTileAtPosition(position);
+        string terrainInfo = tile != null ? $"Type: {tile.tileType}, Weight: {tile.weight}, Walkable: {tile.walkable}" : "No tile data";
+        
+        Debug.Log($"Influence breakdown at {position}:");
+        Debug.Log($"  Terrain: {terrainInfo}");
+        Debug.Log($"  Base: {baseInfluence[position.x, position.y]:F2} (x{baseWeight})");
+        Debug.Log($"  Objective: {objectiveInfluence[position.x, position.y]:F2} (x{objectiveWeight})");
+        Debug.Log($"  Menace: {menaceInfluence[position.x, position.y]:F2} (x{menaceWeight})");
+        Debug.Log($"  Combined: {GetInfluenceAt(position):F2}");
+    }
+    
+    public void DebugTerrainWeights()
+    {
+        Debug.Log("Terrain weights debug:");
+        
+        Dictionary<Vector2Int, TileData> tileGrid = mapGenerator.GetTileGrid();
+        if (tileGrid == null) return;
+        
+        foreach (var kvp in tileGrid)
         {
-            combinedInfluence[position.y, position.x] += influenceChange;
+            TileData tile = kvp.Value;
+            if (tile != null)
+            {
+                float baseValue = GetTerrainBaseValue(tile.tileType, tile.weight);
+                Debug.Log($"Tile at {kvp.Key}: Type={tile.tileType}, Weight={tile.weight}, BaseValue={baseValue:F2}");
+            }
+        }
+    }
+    
+    public void AddTestObjectives()
+    {
+        // Agregar objetivos de prueba si no hay ninguno
+        if (objectivePositions.Count == 0)
+        {
+            AddObjectiveManually(new Vector2Int(2, 2));
+            AddObjectiveManually(new Vector2Int(5, 7));
+        }
+        
+        if (menacePositions.Count == 0)
+        {
+            AddMenaceManually(new Vector2Int(8, 3));
+            AddMenaceManually(new Vector2Int(3, 8));
+        }
+        
+        GenerateInfluenceMap();
+    }
+    
+    public void AddObjectiveManually(Vector2Int position)
+    {
+        if (!objectivePositions.Contains(position))
+        {
+            objectivePositions.Add(position);
+            Debug.Log($"InfluenceMap: Manually added objective at {position}");
+        }
+    }
+    
+    public void AddMenaceManually(Vector2Int position)
+    {
+        if (!menacePositions.Contains(position))
+        {
+            menacePositions.Add(position);
+            Debug.Log($"InfluenceMap: Manually added menace at {position}");
         }
     }
 }
