@@ -25,7 +25,7 @@ public class AIUnitController : MonoBehaviour
 
     void Start()
     {
-        influenceMap = FindObjectOfType<InfluenceMap2>();
+        influenceMap = FindFirstObjectByType<InfluenceMap2>();
         
         if (unit.unitType == Unit.UnitType.HeavyInfantry) fearFactor = 0.5f;
         if (unit.unitType == Unit.UnitType.Artillery) fearFactor = 2.0f;
@@ -81,7 +81,12 @@ public class AIUnitController : MonoBehaviour
             unit.transform.position = Vector3.Lerp(startPos, endPos, Mathf.SmoothStep(0, 1, t));
             yield return null;
         }
-        
+        if(tile.currentBuilding != null)
+        {
+            tile.currentBuilding.hasBeenClaimed = unit.isPlayerUnit ? 1 : 2;
+            tile.currentBuilding.UpdateState();
+        }
+
         unit.transform.position = endPos;
         
         // Pequeña pausa extra para que se note la llegada

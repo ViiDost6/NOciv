@@ -39,7 +39,7 @@ MonoBehaviour:
       data:
         nodeName: 
         guid: ea61f002-50fd-47ea-921a-48e66c827131
-        position: {x: 291, y: 208}
+        position: {x: 195, y: 346}
         children:
         - rid: 2042380929226244171
         - rid: 2042380929226244172
@@ -66,7 +66,7 @@ MonoBehaviour:
       data:
         nodeName: 
         guid: 1db5652d-c432-4241-bf85-4288064b9dc2
-        position: {x: 24, y: 456}
+        position: {x: 23, y: 459}
     - rid: 2042380929226244174
       type: {class: AttackBestTargetNode, ns: , asm: Assembly-CSharp}
       data:

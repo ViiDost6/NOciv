@@ -158,7 +158,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99e98d6a95af311419b28d9750c210a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Base
-  tile: {fileID: 0}
   hasBeenClaimed: 1
 --- !u!1 &1875310677634713395
 GameObject:

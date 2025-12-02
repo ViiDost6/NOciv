@@ -5,6 +5,9 @@ public class UnitGenerator : MonoBehaviour
     public GameObject unitInfantryPrefab;
     public GameObject unitHeavyInfantryPrefab;
     public GameObject unitArtilleryPrefab;
+    public GameObject enemyInfantryPrefab;
+    public GameObject enemyHeavyInfantryPrefab;
+    public GameObject enemyArtilleryPrefab;
 
     [System.Serializable]
     public class UnitSpawnData
@@ -47,13 +50,22 @@ public class UnitGenerator : MonoBehaviour
             switch(data.unitType)
             {
                 case Unit.UnitType.Infantry:
-                    unitPrefab = unitInfantryPrefab;
+                    if(data.isPlayerUnit)
+                        unitPrefab = unitInfantryPrefab;
+                    else
+                        unitPrefab = enemyInfantryPrefab;
                     break;
                 case Unit.UnitType.HeavyInfantry:
-                    unitPrefab = unitHeavyInfantryPrefab;
+                    if(data.isPlayerUnit)
+                        unitPrefab = unitHeavyInfantryPrefab;
+                    else
+                        unitPrefab = enemyHeavyInfantryPrefab;
                     break;
                 case Unit.UnitType.Artillery:
-                    unitPrefab = unitArtilleryPrefab;
+                    if(data.isPlayerUnit)
+                        unitPrefab = unitArtilleryPrefab;
+                    else
+                        unitPrefab = enemyArtilleryPrefab;
                     break;
             }
             GameObject newUnit = Instantiate(unitPrefab, unitContainer.transform);
@@ -71,8 +83,6 @@ public class UnitGenerator : MonoBehaviour
 
                 u.outline = newUnit.transform.Find("Outline").gameObject;
                 u.attackRangeIndicator = newUnit.transform.Find("AttackRange").gameObject;
-
-                if(!u.isPlayerUnit) u.GetComponent<SpriteRenderer>().color = Color.red;
 
                 switch(u.attackRange)
                 {

@@ -25,8 +25,8 @@ public class CommanderAI : MonoBehaviour
     
     void Start()
     {
-        influenceMap = FindObjectOfType<InfluenceMap>();
-        structureManager = FindObjectOfType<StructureManager>();
+        influenceMap = FindFirstObjectByType<InfluenceMap>();
+        structureManager = FindFirstObjectByType<StructureManager>();
         
         if (influenceMap == null)
             Debug.LogError("CommanderAI: No se encontró InfluenceMap en la escena");

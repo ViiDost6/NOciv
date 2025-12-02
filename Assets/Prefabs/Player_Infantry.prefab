@@ -70,7 +70,11 @@ PrefabInstance:
       objectReference: {fileID: 7482667652216324306, guid: 75f5f34dc1b5347e0b8351032682f224, type: 3}
     - target: {fileID: 8518748345492883575, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_Name
-      value: Unit_Infantry
+      value: Player_Infantry
+      objectReference: {fileID: 0}
+    - target: {fileID: 8518748345492883575, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
+      propertyPath: m_TagString
+      value: Menace
       objectReference: {fileID: 0}
     - target: {fileID: 8999305537956913064, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: cost

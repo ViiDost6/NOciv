@@ -14,12 +14,12 @@ public class CommanderAI2 : MonoBehaviour
 
     void Start()
     {
-        influenceMap = FindObjectOfType<InfluenceMap2>();
-        structureManager = FindObjectOfType<StructureManager>();
-        turnManager = FindObjectOfType<TurnManager>();
+        influenceMap = FindFirstObjectByType<InfluenceMap2>();
+        structureManager = FindFirstObjectByType<StructureManager>();
+        turnManager = FindFirstObjectByType<TurnManager>();
         
         // Inicializar mapas
-        influenceMap.Initialize(FindObjectOfType<MapGenerator>(), structureManager);
+        influenceMap.Initialize(FindFirstObjectByType<MapGenerator>(), structureManager);
     }
     
     // Llamado por TurnManager al inicio del turno
