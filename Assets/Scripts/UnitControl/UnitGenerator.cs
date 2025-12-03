@@ -82,20 +82,7 @@ public class UnitGenerator : MonoBehaviour
                 tile.hasUnit = true;
 
                 u.outline = newUnit.transform.Find("Outline").gameObject;
-                u.attackRangeIndicator = newUnit.transform.Find("AttackRange").gameObject;
-
-                switch(u.attackRange)
-                {
-                    case 1:
-                        u.attackRangeIndicator.transform.localScale = new Vector3(4.85f, 4.85f, 1f);
-                        break;
-                    case 2:
-                        u.attackRangeIndicator.transform.localScale = new Vector3(7.5f, 7.7f, 1f);
-                        break;
-                    case 3:
-                        u.transform.Find("AttackRange").localScale = new Vector3(10.3f, 10.6f, 1f);
-                        break;
-                }
+    
             }
         }
     }

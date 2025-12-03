@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Unit : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class Unit : MonoBehaviour
     public int movesTotal;
     public int attackRange;
     public int health;
+    public int maxHealth;
     public int damage;
     public bool hasPiercing;
     public bool hasArmor;
@@ -32,5 +34,23 @@ public class Unit : MonoBehaviour
     {
         currentTile.hasUnit = false;
         Destroy(gameObject);
+    }
+
+    public void UpdateHealthUI()
+    {
+        Transform healthTransform = GetChildByName("Health");
+        Image healthBar = healthTransform.GetComponent<Image>();
+
+        healthBar.fillAmount = (float)health / maxHealth;
+    }
+
+    public Transform GetChildByName(string childName)
+    {
+        foreach (Transform t in GetComponentsInChildren<Transform>(true))
+        {
+            if (t.name == childName)
+                return t;
+        }
+        return null;
     }
 }

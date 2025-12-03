@@ -9,6 +9,14 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1375655697119214620, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 1375655697119214620, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 1375655697119214620, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -48,14 +56,42 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2689162025832888435, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2689162025832888435, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3738008336104036045, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5905865483938609904, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
+      propertyPath: m_Radius
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 6620403799278305878, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 7482667652216324306, guid: 48e93eef0688c4a259cb0eddcd8661f7, type: 3}
+      objectReference: {fileID: 6144630502083641368, guid: 4e3ed09bd662004489a90595227f2a76, type: 3}
+    - target: {fileID: 6620403799278305878, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
+      propertyPath: m_Color.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6620403799278305878, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
+      propertyPath: m_Color.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6620403799278305878, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7960225801506409548, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 7482667652216324306, guid: 48e93eef0688c4a259cb0eddcd8661f7, type: 3}
+      objectReference: {fileID: 6144630502083641368, guid: 4e3ed09bd662004489a90595227f2a76, type: 3}
     - target: {fileID: 8518748345492883575, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_Name
       value: Player_Artillery
@@ -83,6 +119,10 @@ PrefabInstance:
     - target: {fileID: 8999305537956913064, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: unitType
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8999305537956913064, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
+      propertyPath: maxHealth
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 8999305537956913064, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: movesTotal

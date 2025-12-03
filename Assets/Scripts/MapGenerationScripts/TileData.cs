@@ -5,7 +5,6 @@ public class TileData : MonoBehaviour
 {
     public int tileType;
     public bool walkable;
-    public bool canHide;
     public float weight;
     public List<TileData> neighbors = new List<TileData>();
     public Vector2Int gridPosition;

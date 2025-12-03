@@ -5,7 +5,7 @@ public class PantallaPrincipal : MonoBehaviour
 {
     public void Play()
     {
-        CambiarEscena("Juego");
+        CambiarEscena("UnitTest");
     }
     public void CambiarEscena(string escena)
     {

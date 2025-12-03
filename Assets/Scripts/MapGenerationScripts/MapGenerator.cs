@@ -59,7 +59,7 @@ public class MapGenerator : MonoBehaviour
                 if (tileType >= 0 && tileType < terrainPrefabs.Count && terrainPrefabs[tileType] != null)
                 {
                     Vector3 position = new Vector3(xPos, yPos, 0);
-                    GameObject tile = Instantiate(terrainPrefabs[tileType], position, Quaternion.identity);
+                    GameObject tile = Instantiate(terrainPrefabs[tileType], position, terrainPrefabs[tileType].transform.rotation);
                     tile.transform.SetParent(transform);
                     tile.name = $"Hex_{row}_{col}_Type{tileType}";
                     

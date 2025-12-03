@@ -76,6 +76,7 @@ public class UnitManager : MonoBehaviour
             currentUnitSelected.SetOutline(false);
             currentUnitSelected = null;
             DestroyUI();
+            if(currentUnitHover != null) currentUnitHover.SetOutline(true);
             currentState = State.NoSelection;
             return;
         }
@@ -127,13 +128,24 @@ public class UnitManager : MonoBehaviour
     {
         if (currentState == State.SelectingAttack)
         {
-            currentUnitSelected.attackRangeIndicator.SetActive(false);
             currentState = State.UnitSelected;
+
+            List<TileData> attackableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.attackRange);
+            foreach (TileData tile in attackableTiles)
+            {
+                tile.SetOutline(false, Color.black);
+            }
         }
         else
         {
-            currentUnitSelected.attackRangeIndicator.SetActive(true);
             currentState = State.SelectingAttack;
+
+            List<TileData> attackableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.attackRange);
+            foreach (TileData tile in attackableTiles)
+            {
+                tile.SetOutline(true, Color.red);
+            }
+
         }
 
         UpdateButtonVisual();
@@ -144,7 +156,14 @@ public class UnitManager : MonoBehaviour
         if (currentState == State.SelectingMovement) currentState = State.UnitSelected;
         else
         {
-            if(currentState == State.SelectingAttack) currentUnitSelected.attackRangeIndicator.SetActive(false);
+            if(currentState == State.SelectingAttack) 
+            {
+                List<TileData> attackableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.attackRange);
+                foreach (TileData tile in attackableTiles)
+                {
+                    tile.SetOutline(false, Color.black);
+                }
+            }
             currentState = State.SelectingMovement;
         }
 
@@ -199,8 +218,7 @@ public class UnitManager : MonoBehaviour
             {
                 Attack(currentUnitSelected, currentUnitHover);
 
-                currentUnitSelected.attackRangeIndicator.SetActive(false);
-                currentState = State.UnitSelected;
+                ToggleAttackMode();
                 UpdateButtonVisual();
                 currentUnitHover.SetOutline(false);
             }
@@ -219,6 +237,9 @@ public class UnitManager : MonoBehaviour
         }
 
         attacker.hasAttackedThisTurn = true;
+
+        defender.UpdateHealthUI();
+        
         if(defender.health <= 0) defender.Death();
     }
 
