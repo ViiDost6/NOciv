@@ -35,6 +35,11 @@ public class TurnManager : MonoBehaviour
     {
         if (currentTurnState == TurnState.PlayerTurn)
         {
+            unitManager.DestroyUI();
+            unitManager.ToggleAttackRange(false);
+            unitManager.currentUnitSelected.SetOutline(false);
+            unitManager.currentUnitSelected = null;
+            unitManager.currentState = UnitManager.State.NoSelection;
             StartCoroutine(ExecuteAITurnRoutine());
         }
     }
@@ -45,6 +50,7 @@ public class TurnManager : MonoBehaviour
         turnIndicatorText.text = $"Turno {turnNumber}: JUGADOR";
         endTurnButton.interactable = true;
         ResetUnitsActions(true);
+        unitManager.UpdateButtonVisual();
     }
 
     private IEnumerator ExecuteAITurnRoutine()

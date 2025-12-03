@@ -8,15 +8,16 @@ using System.Collections;
 public class UnitManager : MonoBehaviour
 {
     public static UnitManager Instance;
+    public TurnManager turnManager;
     public GameObject unitActionUIPrefab;
 
-    private enum State { NoSelection, UnitSelected, SelectingMovement, SelectingAttack }
+    public enum State { NoSelection, UnitSelected, SelectingMovement, SelectingAttack }
 
     private Unit currentUnitHover = null;
     private TileData currentTileHover = null;
-    private Unit currentUnitSelected = null;
+    public Unit currentUnitSelected = null;
     private GameObject currentUI = null;
-    private State currentState = State.NoSelection;
+    public State currentState = State.NoSelection;
 
     private Button attackBtn;
     private Button moveBtn;
@@ -28,6 +29,7 @@ public class UnitManager : MonoBehaviour
 
     void Update()
     {
+        if(turnManager.currentTurnState != TurnManager.TurnState.PlayerTurn) return;
         switch (currentState)
         {
             case State.NoSelection:       UpdateNoSelection();       break;
@@ -128,27 +130,26 @@ public class UnitManager : MonoBehaviour
     {
         if (currentState == State.SelectingAttack)
         {
-            currentState = State.UnitSelected;
-
-            List<TileData> attackableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.attackRange);
-            foreach (TileData tile in attackableTiles)
-            {
-                tile.SetOutline(false, Color.black);
-            }
+            ToggleAttackRange(false);
         }
         else
         {
             currentState = State.SelectingAttack;
 
-            List<TileData> attackableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.attackRange);
-            foreach (TileData tile in attackableTiles)
-            {
-                tile.SetOutline(true, Color.red);
-            }
-
+            ToggleAttackRange(true);
         }
 
         UpdateButtonVisual();
+    }
+
+    public void ToggleAttackRange(bool show)
+    {
+        List<TileData> attackableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.attackRange);
+        foreach (TileData tile in attackableTiles)
+        {
+            if(show) tile.SetOutline(show, Color.red);
+            else tile.SetOutline(false, Color.black);
+        }
     }
 
     private void ToggleMoveMode()
@@ -170,7 +171,7 @@ public class UnitManager : MonoBehaviour
         UpdateButtonVisual();
     }
 
-    private void UpdateButtonVisual()
+    public void UpdateButtonVisual()
     {
         if (attackBtn != null)
         {
@@ -239,7 +240,7 @@ public class UnitManager : MonoBehaviour
         attacker.hasAttackedThisTurn = true;
 
         defender.UpdateHealthUI();
-        
+
         if(defender.health <= 0) defender.Death();
     }
 
@@ -357,7 +358,7 @@ public class UnitManager : MonoBehaviour
         else return !unit.isPlayerUnit && currentUnitSelected.reachableTiles.Contains(unit.currentTile);
     }
 
-    private void DestroyUI()
+    public void DestroyUI()
     {
         if (currentUI != null)
         {
