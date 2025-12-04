@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 293c82b7c2feee44ca03d78f5a96144f
+guid: c537abdce12c9b344889b65fdb9e0db4
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2599847176975491756
-    second: Grass_1_0
+      213: 1691826359244713421
+    second: Dog-Heavygun_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Grass_1_0
+      name: Dog-Heavygun_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 5
-        width: 128
-        height: 118
+        x: 4
+        y: 19
+        width: 115
+        height: 102
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 45dd21264cc7bebd0800000000000000
-      internalID: -2599847176975491756
+      spriteID: dcd6c6c2c139a7710800000000000000
+      internalID: 1691826359244713421
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Grass_1_0: -2599847176975491756
+      Dog-Heavygun_0: 1691826359244713421
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

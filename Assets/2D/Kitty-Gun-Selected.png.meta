@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 293c82b7c2feee44ca03d78f5a96144f
+guid: e4733dee99666274ab999cd45f200189
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2599847176975491756
-    second: Grass_1_0
+      213: -6443260815834265720
+    second: Kitty-Gun-Selected_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Grass_1_0
+      name: Kitty-Gun-Selected_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 5
-        width: 128
-        height: 118
+        x: 13
+        y: 17
+        width: 105
+        height: 95
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 45dd21264cc7bebd0800000000000000
-      internalID: -2599847176975491756
+      spriteID: 88741050d60f496a0800000000000000
+      internalID: -6443260815834265720
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Grass_1_0: -2599847176975491756
+      Kitty-Gun-Selected_0: -6443260815834265720
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
