@@ -17,9 +17,16 @@ public class TurnManager : MonoBehaviour
 
     [Header("References")]
     public CommanderAI2 commanderAI;
-    public UnitManager unitManager; // Referencia opcional si necesitas acceder
+    public UnitManager unitManager;
     
     private int turnNumber = 1;
+    public int resourcePerTurn = 25;
+
+    public int playerResources = 0;
+    public int aiResources = 0;
+    public int playerResourceBuildings = 0;
+    public int aiResourceBuildings = 0;
+
 
     void Awake()
     {
@@ -48,6 +55,9 @@ public class TurnManager : MonoBehaviour
     {
         currentTurnState = TurnState.PlayerTurn;
         turnIndicatorText.text = $"Turno {turnNumber}: JUGADOR";
+
+        playerResources += resourcePerTurn * (playerResourceBuildings + 2);
+
         endTurnButton.interactable = true;
         ResetUnitsActions(true);
         unitManager.UpdateButtonVisual();
@@ -57,8 +67,10 @@ public class TurnManager : MonoBehaviour
     {
         currentTurnState = TurnState.AIProcessing;
         turnIndicatorText.text = "Turno IA: Pensando...";
-        endTurnButton.interactable = false;
 
+        aiResources += resourcePerTurn * (aiResourceBuildings + 2);
+
+        endTurnButton.interactable = false;
         ResetUnitsActions(false);
         commanderAI.PrepareTurn(); 
         

@@ -296,8 +296,23 @@ public class UnitManager : MonoBehaviour
 
         if(tile.currentBuilding != null)
         {
-            tile.currentBuilding.hasBeenClaimed = unit.isPlayerUnit ? 1 : 2;
-            tile.currentBuilding.UpdateState();
+            if(unit.isPlayerUnit && tile.currentBuilding.hasBeenClaimed == 1) return;
+            if(!unit.isPlayerUnit && tile.currentBuilding.hasBeenClaimed == 2) return;
+
+            if(unit.isPlayerUnit)
+            {
+                if(tile.currentBuilding.hasBeenClaimed == 2) turnManager.aiResourceBuildings--;
+                tile.currentBuilding.hasBeenClaimed = 1;
+                turnManager.playerResourceBuildings++;
+            }
+            else
+            {
+                if(tile.currentBuilding.hasBeenClaimed == 1) turnManager.playerResourceBuildings--;
+                tile.currentBuilding.hasBeenClaimed = 2;
+                turnManager.aiResourceBuildings++;
+            }  
+
+            tile.currentBuilding.UpdateState();          
         }
 
         Vector3 endPos = new Vector3(tile.transform.position.x, tile.transform.position.y, -1);

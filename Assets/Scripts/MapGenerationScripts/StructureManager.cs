@@ -14,7 +14,7 @@ public class StructureManager : MonoBehaviour
     [Range(1, 20)] public int maxResources = 10;
     [Range(1, 50)] public int resourceBorderMargin = 10;
     
-    private List<GameObject> placedStructures = new List<GameObject>();
+    public List<GameObject> placedStructures { get; private set; } = new List<GameObject>();
     public List<Vector2Int> PlayerTowerPositions { get; private set; } = new List<Vector2Int>();
     public List<Vector2Int> EnemyTowerPositions { get; private set; } = new List<Vector2Int>();
     public List<Vector2Int> ResourcePositions { get; private set; } = new List<Vector2Int>();
