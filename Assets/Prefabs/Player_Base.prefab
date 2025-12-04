@@ -157,6 +157,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Base
   hasBeenClaimed: 1
+  isBase: 1
 --- !u!1 &1875310677634713395
 GameObject:
   m_ObjectHideFlags: 0

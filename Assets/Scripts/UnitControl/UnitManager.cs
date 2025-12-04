@@ -10,6 +10,7 @@ public class UnitManager : MonoBehaviour
     public static UnitManager Instance;
     public TurnManager turnManager;
     public GameObject unitActionUIPrefab;
+    public StructureManager structureManager;
 
     public enum State { NoSelection, UnitSelected, SelectingMovement, SelectingAttack }
 
@@ -21,6 +22,9 @@ public class UnitManager : MonoBehaviour
 
     private Button attackBtn;
     private Button moveBtn;
+
+    public int playerBaseCount = 0;
+    public int aiBaseCount = 0;
 
     private void Awake()
     {
@@ -130,12 +134,12 @@ public class UnitManager : MonoBehaviour
     {
         if (currentState == State.SelectingAttack)
         {
+            currentState = State.UnitSelected;
             ToggleAttackRange(false);
         }
         else
         {
             currentState = State.SelectingAttack;
-
             ToggleAttackRange(true);
         }
 
@@ -296,25 +300,47 @@ public class UnitManager : MonoBehaviour
 
         if(tile.currentBuilding != null)
         {
-            if(unit.isPlayerUnit && tile.currentBuilding.hasBeenClaimed == 1) return;
-            if(!unit.isPlayerUnit && tile.currentBuilding.hasBeenClaimed == 2) return;
-
-            if(unit.isPlayerUnit)
-            {
-                if(tile.currentBuilding.hasBeenClaimed == 2) turnManager.aiResourceBuildings--;
-                tile.currentBuilding.hasBeenClaimed = 1;
-                turnManager.playerResourceBuildings++;
-            }
+            if(unit.isPlayerUnit && tile.currentBuilding.hasBeenClaimed == 1){}
+            else if(!unit.isPlayerUnit && tile.currentBuilding.hasBeenClaimed == 2){}
             else
             {
-                if(tile.currentBuilding.hasBeenClaimed == 1) turnManager.playerResourceBuildings--;
-                tile.currentBuilding.hasBeenClaimed = 2;
-                turnManager.aiResourceBuildings++;
-            }  
+                
+                if(tile.currentBuilding.isBase)
+                {
+                    if(unit.isPlayerUnit)
+                    {
+                        playerBaseCount++;
+                        aiBaseCount--;
+                        tile.currentBuilding.hasBeenClaimed = 1;
+                        if(aiBaseCount <= 0) turnManager.EndGame(true);
+                    }
+                    else
+                    {
+                        aiBaseCount++;
+                        playerBaseCount--;
+                        tile.currentBuilding.hasBeenClaimed = 2;
+                        if(playerBaseCount <= 0) turnManager.EndGame(false);
+                    }
+                }
+                else
+                {
+                    if(unit.isPlayerUnit)
+                    {
+                        if(tile.currentBuilding.hasBeenClaimed == 2) turnManager.aiResourceBuildings--;
+                        tile.currentBuilding.hasBeenClaimed = 1;
+                        turnManager.playerResourceBuildings++;
+                    }
+                    else
+                    {
+                        if(tile.currentBuilding.hasBeenClaimed == 1) turnManager.playerResourceBuildings--;
+                        tile.currentBuilding.hasBeenClaimed = 2;
+                        turnManager.aiResourceBuildings++;
+                    } 
+                } 
 
-            tile.currentBuilding.UpdateState();          
+                tile.currentBuilding.UpdateState();          
+            }
         }
-
         Vector3 endPos = new Vector3(tile.transform.position.x, tile.transform.position.y, -1);
         StartCoroutine(MovementCoroutine(unit, endPos));
     }

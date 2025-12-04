@@ -3,6 +3,7 @@ using UnityEngine;
 public class Building : MonoBehaviour
 {
     public int hasBeenClaimed = 0; // 0 = unclaimed, 1 = player, 2 = enemy
+    public bool isBase = false;
     public void UpdateState()
     {
         SpriteRenderer sr = GetComponent<SpriteRenderer>();

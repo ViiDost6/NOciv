@@ -14,19 +14,18 @@ public class TurnManager : MonoBehaviour
     [Header("UI References")]
     public Button endTurnButton;
     public TextMeshProUGUI turnIndicatorText;
+    public TextMeshProUGUI turnResourceText;
 
     [Header("References")]
     public CommanderAI2 commanderAI;
     public UnitManager unitManager;
     
-    private int turnNumber = 1;
     public int resourcePerTurn = 25;
 
     public int playerResources = 0;
     public int aiResources = 0;
     public int playerResourceBuildings = 0;
     public int aiResourceBuildings = 0;
-
 
     void Awake()
     {
@@ -54,7 +53,8 @@ public class TurnManager : MonoBehaviour
     private void StartPlayerTurn()
     {
         currentTurnState = TurnState.PlayerTurn;
-        turnIndicatorText.text = $"Turno {turnNumber}: JUGADOR";
+        turnIndicatorText.text = $"Turno Jugador";
+        turnResourceText.text = $"Recursos: {playerResources}";
 
         playerResources += resourcePerTurn * (playerResourceBuildings + 2);
 
@@ -121,8 +121,6 @@ public class TurnManager : MonoBehaviour
             // Pausa entre rondas de acciones para no congelar si el bucle es largo
             yield return null; 
         }
-
-        turnNumber++;
         StartPlayerTurn();
     }
 
@@ -148,5 +146,22 @@ public class TurnManager : MonoBehaviour
             if (u.isPlayerUnit == playerUnits) result.Add(u);
         }
         return result;
+    }
+
+    public void EndGame(bool playerWon)
+    {
+        currentTurnState = TurnState.AIProcessing;
+        StopAllCoroutines();
+        if (unitManager.currentUnitSelected != null) unitManager.currentUnitSelected.SetOutline(false);
+        unitManager.DestroyUI();
+        endTurnButton.interactable = false;
+        if (playerWon)
+        {
+            turnIndicatorText.text = "¡Victoria!";
+        }
+        else
+        {
+            turnIndicatorText.text = "¡Derrota!";
+        }
     }
 }

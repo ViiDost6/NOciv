@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public class StructureManager : MonoBehaviour
 {
     public MapGenerator mapGenerator;
+    public UnitManager unitManager;
     public GameObject playerTowerPrefab;
     public GameObject enemyTowerPrefab;
     [Range(1, 10)] public int maxTowersPerPlayer = 3;
@@ -14,7 +15,7 @@ public class StructureManager : MonoBehaviour
     [Range(1, 20)] public int maxResources = 10;
     [Range(1, 50)] public int resourceBorderMargin = 10;
     
-    public List<GameObject> placedStructures { get; private set; } = new List<GameObject>();
+    private List<GameObject> placedStructures = new List<GameObject>();
     public List<Vector2Int> PlayerTowerPositions { get; private set; } = new List<Vector2Int>();
     public List<Vector2Int> EnemyTowerPositions { get; private set; } = new List<Vector2Int>();
     public List<Vector2Int> ResourcePositions { get; private set; } = new List<Vector2Int>();
@@ -287,6 +288,8 @@ public class StructureManager : MonoBehaviour
         tower.name = $"{owner}_Tower_{position.x}_{position.y}";
         tile.currentBuilding = tower.GetComponent<Building>();
         tile.currentBuilding.UpdateState();
+        if(owner == "player") unitManager.playerBaseCount++;
+        else if(owner == "enemy") unitManager.aiBaseCount++;
         placedStructures.Add(tower);
     }
     
@@ -316,6 +319,8 @@ public class StructureManager : MonoBehaviour
         PlayerTowerPositions.Clear();
         EnemyTowerPositions.Clear();
         ResourcePositions.Clear();
+        unitManager.playerBaseCount = 0;
+        unitManager.aiBaseCount = 0;
     }
     
     public int GetStructureCount()
