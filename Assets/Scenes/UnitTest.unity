@@ -223132,7 +223132,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.2
+  m_Volume: 1
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -223229,7 +223229,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.2
+  m_Volume: 0.1
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -223343,20 +223343,19 @@ MonoBehaviour:
   musicSource: {fileID: 856208978}
   sfxSource: {fileID: 856208977}
   musicClip: {fileID: 8300000, guid: 333f6baeefef67049ba2d25e39f05d45, type: 3}
-  buttonClip: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  hoverClip: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  moveClip: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  captureAIClip: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  capturePlayerClip: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  victory: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  defeat: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  playerTurnStart: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  playerUnitSelect: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  BaseSelect: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  ResourceSelect: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  infantryAttack: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  heavyInfantryAttack: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
-  artilleryAttack: {fileID: 8300000, guid: 66f5d1fbbee2f714db01ff4a890bea98, type: 3}
+  buttonClip: {fileID: 8300000, guid: c8986d892f01b92428f16329458f552f, type: 3}
+  hoverClip: {fileID: 8300000, guid: b70589e1033a9974390cbcc899e0ec2d, type: 3}
+  moveClip: {fileID: 8300000, guid: a81c4d984bc117142a99c05dd8769fdf, type: 3}
+  captureAIClip: {fileID: 8300000, guid: 3182535fa128ea74296f503730954b35, type: 3}
+  capturePlayerClip: {fileID: 8300000, guid: 40bd2b27366bfd746bb32310aff37936, type: 3}
+  victory: {fileID: 8300000, guid: d72603a94bd4c2e49bad7cfa32e70f3b, type: 3}
+  defeat: {fileID: 8300000, guid: 44076db6cd720c749b9db9ec446aa6ed, type: 3}
+  playerTurnStart: {fileID: 8300000, guid: 35956da0f6a6be041a88a983589ae76c, type: 3}
+  playerUnitSelect: {fileID: 8300000, guid: aae4bf10a882ab941b20221d4d0a56da, type: 3}
+  BaseSelect: {fileID: 8300000, guid: 52abcaa1339248043b419dacef951397, type: 3}
+  infantryAttack: {fileID: 8300000, guid: ec0958fcba1fe9246afd0b39a995112a, type: 3}
+  heavyInfantryAttack: {fileID: 8300000, guid: 9cdf5c4ae5605f54484f4d569962f315, type: 3}
+  artilleryAttack: {fileID: 8300000, guid: 7d325b2a5f09b334fa3c06ad736a0f86, type: 3}
 --- !u!1 &858018544
 GameObject:
   m_ObjectHideFlags: 0

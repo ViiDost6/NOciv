@@ -58,7 +58,7 @@ public class UnitManager : MonoBehaviour
         if (currentUnitHover != null && IsSelectable(currentUnitHover) && currentUnitHover != currentUnitSelected)
         {
             currentUnitHover.SetOutline(true);
-            AudioManager.Instance.PlaySFX(AudioManager.Instance.hoverClip);
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.hoverClip, 1.0f);
         }
     }
 
@@ -71,7 +71,7 @@ public class UnitManager : MonoBehaviour
         if (currentUnitHover != null && IsSelectable(currentUnitHover) && Input.GetMouseButtonDown(0))
         {
             currentUnitSelected = currentUnitHover;
-            AudioManager.Instance.PlaySFX(AudioManager.Instance.playerUnitSelect);
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.playerUnitSelect, 1.0f);
             currentState = State.UnitSelected;
         }
     }
@@ -240,13 +240,13 @@ public class UnitManager : MonoBehaviour
         switch(attacker.unitType)
         {
             case Unit.UnitType.Infantry:
-                AudioManager.Instance.PlaySFX(AudioManager.Instance.infantryAttack);
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.infantryAttack, 1.0f);
                 break;
             case Unit.UnitType.HeavyInfantry:
-                AudioManager.Instance.PlaySFX(AudioManager.Instance.heavyInfantryAttack);
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.heavyInfantryAttack, 1.0f);
                 break;
             case Unit.UnitType.Artillery:
-                AudioManager.Instance.PlaySFX(AudioManager.Instance.artilleryAttack);
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.artilleryAttack, 1.0f);
                 break;
         }
 
@@ -327,7 +327,7 @@ public class UnitManager : MonoBehaviour
                 {
                     if(unit.isPlayerUnit)
                     {
-                        AudioManager.Instance.PlaySFX(AudioManager.Instance.capturePlayerClip);
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.capturePlayerClip, 1.0f);
                         playerBaseCount++;
                         aiBaseCount--;
                         tile.currentBuilding.hasBeenClaimed = 1;
@@ -335,7 +335,7 @@ public class UnitManager : MonoBehaviour
                     }
                     else
                     {
-                        AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip);
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip, 1.0f);
                         aiBaseCount++;
                         playerBaseCount--;
                         tile.currentBuilding.hasBeenClaimed = 2;
@@ -346,14 +346,14 @@ public class UnitManager : MonoBehaviour
                 {
                     if(unit.isPlayerUnit)
                     {
-                        AudioManager.Instance.PlaySFX(AudioManager.Instance.capturePlayerClip);
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.capturePlayerClip, 1.0f);
                         if(tile.currentBuilding.hasBeenClaimed == 2) turnManager.aiResourceBuildings--;
                         tile.currentBuilding.hasBeenClaimed = 1;
                         turnManager.playerResourceBuildings++;
                     }
                     else
                     {
-                        AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip);
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip, 1.0f);
                         if(tile.currentBuilding.hasBeenClaimed == 1) turnManager.playerResourceBuildings--;
                         tile.currentBuilding.hasBeenClaimed = 2;
                         turnManager.aiResourceBuildings++;
@@ -369,7 +369,7 @@ public class UnitManager : MonoBehaviour
 
     private IEnumerator MovementCoroutine(Unit unit, Vector3 endPos)
     {
-        AudioManager.Instance.PlaySFX(AudioManager.Instance.moveClip);
+        AudioManager.Instance.PlaySFX(AudioManager.Instance.moveClip, 1.0f);
 
         Vector3 startPos = unit.transform.position;
         float duration = 0.5f;

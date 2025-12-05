@@ -19,7 +19,6 @@ public class AudioManager : MonoBehaviour
     [Header("Select")]
     public AudioClip playerUnitSelect; // testear
     public AudioClip BaseSelect; // implementar
-    public AudioClip ResourceSelect; // implementar
 
     [Header("Attack")]
     public AudioClip infantryAttack; // testear
@@ -38,8 +37,8 @@ public class AudioManager : MonoBehaviour
         musicSource.Play();
     }
 
-    public void PlaySFX(AudioClip clip)
+    public void PlaySFX(AudioClip clip, float volume = 1f)
     {
-        sfxSource.PlayOneShot(clip);
+        sfxSource.PlayOneShot(clip, volume);
     }
 }

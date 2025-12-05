@@ -39,7 +39,7 @@ public class TurnManager : MonoBehaviour
 
     public void OnEndTurnButtonPressed()
     {
-        AudioManager.Instance.PlaySFX(AudioManager.Instance.buttonClip);
+        AudioManager.Instance.PlaySFX(AudioManager.Instance.buttonClip, 1.0f);
 
         if (currentTurnState == TurnState.PlayerTurn)
         {
@@ -56,7 +56,7 @@ public class TurnManager : MonoBehaviour
     {
         currentTurnState = TurnState.PlayerTurn;
 
-        AudioManager.Instance.PlaySFX(AudioManager.Instance.playerTurnStart);
+        AudioManager.Instance.PlaySFX(AudioManager.Instance.playerTurnStart, 1.0f);
 
         turnIndicatorText.text = $"Turno Jugador";
         turnResourceText.text = $"Recursos: {playerResources}";
@@ -163,12 +163,12 @@ public class TurnManager : MonoBehaviour
         AudioManager.Instance.musicSource.Stop();
         if (playerWon)
         {
-            AudioManager.Instance.PlaySFX(AudioManager.Instance.victory);
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.victory, 1.0f);
             turnIndicatorText.text = "¡Victoria!";
         }
         else
         {
-            AudioManager.Instance.PlaySFX(AudioManager.Instance.defeat);
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.defeat, 1.0f);
             turnIndicatorText.text = "¡Derrota!";
         }
     }
