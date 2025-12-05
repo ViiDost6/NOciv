@@ -18,6 +18,7 @@ public class TileData : MonoBehaviour
         walkable = canWalk;
         weight = cost;
         gridPosition = new Vector2Int(row, col);
+        outline = transform.Find("Outline").gameObject;        
     }
     
     public void AddNeighbor(TileData neighbor)

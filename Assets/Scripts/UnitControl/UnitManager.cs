@@ -131,7 +131,6 @@ public class UnitManager : MonoBehaviour
             moveBtn.onClick.AddListener(() => ToggleMoveMode());
         }
 
-        moveBtn.GetComponentInChildren<TMP_Text>().text = $"Moves: {currentUnitSelected.movesLeftThisTurn}";
         UpdateButtonVisual();
     }
 
@@ -144,6 +143,10 @@ public class UnitManager : MonoBehaviour
         }
         else
         {
+            if(currentState == State.SelectingMovement) 
+            {
+                ToggleMovementRange(false);
+            }
             currentState = State.SelectingAttack;
             ToggleAttackRange(true);
         }
@@ -153,28 +156,76 @@ public class UnitManager : MonoBehaviour
 
     public void ToggleAttackRange(bool show)
     {
-        List<TileData> attackableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.attackRange);
-        foreach (TileData tile in attackableTiles)
+        if (show)
         {
-            if(show) tile.SetOutline(show, Color.red);
-            else tile.SetOutline(false, Color.black);
+            foreach (TileData t in currentUnitSelected.shownAttackTiles)
+                t.SetOutline(false);
+
+            currentUnitSelected.shownAttackTiles.Clear();
+
+            currentUnitSelected.attackableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.attackRange);
+            currentUnitSelected.shownAttackTiles.AddRange(currentUnitSelected.attackableTiles);
+
+            foreach (TileData tile in currentUnitSelected.attackableTiles) tile.SetOutline(true, Color.red);
+        }
+        else
+        {
+            foreach (TileData tile in currentUnitSelected.shownAttackTiles)
+                tile.SetOutline(false);
+
+            currentUnitSelected.shownAttackTiles.Clear();
+        }
+    }
+
+    public void ToggleMovementRange(bool show)
+    {
+        if (show)
+        {
+            // Limpiar los que estuvieran antes
+            foreach (TileData t in currentUnitSelected.shownMoveTiles)
+                t.SetOutline(false);
+
+            currentUnitSelected.shownMoveTiles.Clear();
+
+            // Calcular el rango desde la casilla actual
+            List<TileData> moveableTiles =
+                CalculateTilesInRange(currentUnitSelected.currentTile,
+                                    currentUnitSelected.movesLeftThisTurn);
+
+            currentUnitSelected.reachableTiles = moveableTiles;
+
+            // Guardar los tiles mostrados
+            currentUnitSelected.shownMoveTiles.AddRange(moveableTiles);
+
+            // Mostrar outline
+            foreach (TileData tile in moveableTiles)
+                tile.SetOutline(true, Color.darkGray);
+        }
+        else
+        {
+            // Ocultar SOLO los tiles mostrados antes
+            foreach (TileData tile in currentUnitSelected.shownMoveTiles)
+                tile.SetOutline(false);
+
+            currentUnitSelected.shownMoveTiles.Clear();
         }
     }
 
     private void ToggleMoveMode()
     {
-        if (currentState == State.SelectingMovement) currentState = State.UnitSelected;
+        if (currentState == State.SelectingMovement)
+        {
+            currentState = State.UnitSelected;
+            ToggleMovementRange(false);
+        }
         else
         {
             if(currentState == State.SelectingAttack) 
             {
-                List<TileData> attackableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.attackRange);
-                foreach (TileData tile in attackableTiles)
-                {
-                    tile.SetOutline(false, Color.black);
-                }
+                ToggleAttackRange(false);
             }
             currentState = State.SelectingMovement;
+            ToggleMovementRange(true);
         }
 
         UpdateButtonVisual();
@@ -275,26 +326,36 @@ public class UnitManager : MonoBehaviour
         TileData tileHit = hit.collider != null ? hit.collider.GetComponent<TileData>() : null;
 
         // Limpiar outline anterior
-        if (currentTileHover != null)
+        if(currentTileHover != null && currentUnitSelected.reachableTiles.Contains(currentTileHover))
+        {
+            currentTileHover.SetOutline(true, Color.darkGray);
+            currentTileHover.outline.GetComponent<SpriteRenderer>().sortingOrder = -2;
+        }
+        else if (currentTileHover != null)
+        {
+            currentTileHover.outline.GetComponent<SpriteRenderer>().sortingOrder = -2;
             currentTileHover.SetOutline(false);
+        }
 
         currentTileHover = tileHit;
-
+        currentUnitSelected.reachableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.movesLeftThisTurn);
         if (tileHit == null || currentUnitSelected == null) return;
 
         // Comprobar si el tile está en los alcanzables
-        if (currentUnitSelected.currentTile.neighbors.Contains(tileHit) && !tileHit.hasUnit)
+        if (currentUnitSelected.reachableTiles.Contains(tileHit) && !tileHit.hasUnit)
         {
-            tileHit.SetOutline(true);
+            tileHit.SetOutline(true, Color.black);
+            tileHit.outline.GetComponent<SpriteRenderer>().sortingOrder = -1;
 
             if (Input.GetMouseButtonDown(0))
             {
+                ToggleMovementRange(false);
                 MoveUnitToTile(currentUnitSelected, tileHit);
                 currentState = State.UnitSelected;
                 UpdateButtonVisual();
 
                 // Recalcular tiles de movimiento si quieres mostrar de nuevo
-                currentUnitSelected.reachableTiles = CalculateTilesInRange(tileHit, currentUnitSelected.attackRange);
+                currentUnitSelected.reachableTiles = CalculateTilesInRange(tileHit, currentUnitSelected.movesLeftThisTurn);
             }
         }
     }
@@ -420,7 +481,7 @@ public class UnitManager : MonoBehaviour
     public bool IsSelectable(Unit unit)
     {
         if(currentState != State.SelectingAttack) return unit.isPlayerUnit;
-        else return !unit.isPlayerUnit && currentUnitSelected.reachableTiles.Contains(unit.currentTile);
+        else return !unit.isPlayerUnit && currentUnitSelected.attackableTiles.Contains(unit.currentTile);
     }
 
     public void DestroyUI()

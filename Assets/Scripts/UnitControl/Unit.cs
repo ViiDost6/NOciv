@@ -16,13 +16,15 @@ public class Unit : MonoBehaviour
     public bool hasArmor;
 
     public GameObject outline;
-    public GameObject attackRangeIndicator;
     public bool isPlayerUnit;
-    public List<TileData> reachableTiles = new List<TileData>();
     public int movesLeftThisTurn;
     public bool hasAttackedThisTurn;
 
     public TileData currentTile;
+    public List<TileData> attackableTiles = new List<TileData>();
+    public List<TileData> reachableTiles = new List<TileData>();
+    public List<TileData> shownAttackTiles = new List<TileData>();
+    public List<TileData> shownMoveTiles = new List<TileData>();
 
     public void SetOutline(bool state)
     {
