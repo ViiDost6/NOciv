@@ -43,6 +43,136 @@ public class UnitManager : MonoBehaviour
         }
     }
 
+    public class PathNode
+    {
+        public TileData parent;
+        public int cost;
+
+        public PathNode(TileData parent, int cost)
+        {
+            this.parent = parent;
+            this.cost = cost;
+        }
+    }
+
+    private Dictionary<TileData, PathNode> lastPathMap = new Dictionary<TileData, PathNode>();
+
+    public List<TileData> CalculateReachableTilesWithPaths(TileData startTile, int movementPoints)
+    {
+        lastPathMap.Clear();
+        List<TileData> reachable = new List<TileData>();
+
+        // Cola para BFS modificado (tile, coste acumulado)
+        Queue<(TileData tile, int cost)> queue = new Queue<(TileData tile, int cost)>();
+        queue.Enqueue((startTile, 0));
+        lastPathMap[startTile] = new PathNode(null, 0);
+
+        while(queue.Count > 0)
+        {
+            var (current, costSoFar) = queue.Dequeue();
+
+            foreach(TileData neighbor in current.neighbors)
+            {
+                if(!neighbor.walkable) continue;
+
+                int stepCost = 1;
+                if (currentUnitSelected != null && currentUnitSelected.unitType == Unit.UnitType.Artillery &&
+                (current.tileType == 2 || neighbor.tileType == 2))
+                {
+                    stepCost = 2;
+                    if (movementPoints - costSoFar == 1) // Permitir moverse si queda 1 punto
+                        stepCost = 1;
+                }
+
+                int newCost = costSoFar + stepCost;
+
+                if(newCost > movementPoints) continue;
+
+                if(!lastPathMap.ContainsKey(neighbor) || newCost < lastPathMap[neighbor].cost)
+                {
+                    lastPathMap[neighbor] = new PathNode(current, newCost);
+                    queue.Enqueue((neighbor, newCost));
+                    reachable.Add(neighbor);
+                }
+            }
+        }
+
+        return reachable;
+    }
+
+    public List<TileData> ReconstructPath(TileData target)
+    {
+        List<TileData> path = new List<TileData>();
+        TileData current = target;
+
+        while(current != null)
+        {
+            path.Add(current);
+            if(lastPathMap.ContainsKey(current))
+                current = lastPathMap[current].parent;
+            else
+                current = null;
+        }
+
+        path.Reverse();
+        return path;
+    }
+
+    public IEnumerator MoveUnitThroughPath(Unit unit, List<TileData> path)
+    {
+        if(unit == null || path == null || path.Count == 0) yield break;
+
+        foreach(TileData tile in path)
+        {
+            // Calcular coste del movimiento actual
+            int stepCost = 1;
+            if(unit.unitType == Unit.UnitType.Artillery && (unit.currentTile.tileType == 2 || tile.tileType == 2))
+            {
+                stepCost = 2;
+                if(unit.movesLeftThisTurn == 1) stepCost = 1;
+            }
+            if(tile != unit.currentTile) unit.movesLeftThisTurn -= stepCost;
+
+            if(unit.movesLeftThisTurn < 0) unit.movesLeftThisTurn = 0;
+
+            // Actualizar posición de la unidad
+            Vector3 startPos = unit.transform.position;
+            Vector3 endPos = new Vector3(tile.transform.position.x, tile.transform.position.y, -1);
+            float duration = 0.3f; // Ajusta velocidad de movimiento
+            float elapsed = 0f;
+
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.moveClip, 1.0f);
+
+            while(elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / duration;
+                unit.transform.position = Vector3.Lerp(startPos, endPos, t);
+                yield return null;
+            }
+            unit.transform.position = endPos;
+
+            // Actualizar tile de la unidad
+            unit.currentTile.hasUnit = false;
+            unit.currentTile = tile;
+            tile.hasUnit = true;
+
+            // Mantener outline desactivado en cada paso
+            tile.SetOutline(false);
+        }
+
+        // Recalcular tiles alcanzables después del movimiento
+        if(currentState == State.SelectingMovement)
+        {
+            currentUnitSelected.reachableTiles = CalculateReachableTilesWithPaths(unit.currentTile, unit.movesLeftThisTurn);
+            foreach(TileData t in currentUnitSelected.reachableTiles)
+            {
+                t.SetOutline(true, Color.darkGray);
+            }
+        }
+        UpdateButtonVisual();
+    }
+
     private void HandleHover()
     {
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -106,8 +236,6 @@ public class UnitManager : MonoBehaviour
     private void CreateUIForSelected()
     {
         currentUI = Instantiate(unitActionUIPrefab, currentUnitSelected.transform);
-
-        currentUnitSelected.reachableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.attackRange);
 
         Transform canvas = currentUI.transform.Find("Canvas");
         if (canvas == null)
@@ -188,18 +316,17 @@ public class UnitManager : MonoBehaviour
             currentUnitSelected.shownMoveTiles.Clear();
 
             // Calcular el rango desde la casilla actual
-            List<TileData> moveableTiles =
-                CalculateTilesInRange(currentUnitSelected.currentTile,
-                                    currentUnitSelected.movesLeftThisTurn);
-
-            currentUnitSelected.reachableTiles = moveableTiles;
+            currentUnitSelected.reachableTiles = CalculateReachableTilesWithPaths(currentUnitSelected.currentTile, currentUnitSelected.movesLeftThisTurn);
 
             // Guardar los tiles mostrados
-            currentUnitSelected.shownMoveTiles.AddRange(moveableTiles);
+            currentUnitSelected.shownMoveTiles.AddRange(currentUnitSelected.reachableTiles);
 
             // Mostrar outline
-            foreach (TileData tile in moveableTiles)
-                tile.SetOutline(true, Color.darkGray);
+            foreach (TileData t in currentUnitSelected.reachableTiles)
+            {
+                t.SetOutline(true, Color.darkGray);
+                currentUnitSelected.shownMoveTiles.Add(t);
+            }
         }
         else
         {
@@ -338,7 +465,7 @@ public class UnitManager : MonoBehaviour
         }
 
         currentTileHover = tileHit;
-        currentUnitSelected.reachableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.movesLeftThisTurn);
+        currentUnitSelected.reachableTiles = CalculateReachableTilesWithPaths(currentUnitSelected.currentTile, currentUnitSelected.movesLeftThisTurn);
         if (tileHit == null || currentUnitSelected == null) return;
 
         // Comprobar si el tile está en los alcanzables
@@ -350,100 +477,14 @@ public class UnitManager : MonoBehaviour
             if (Input.GetMouseButtonDown(0))
             {
                 ToggleMovementRange(false);
-                MoveUnitToTile(currentUnitSelected, tileHit);
+
+                List<TileData> path = ReconstructPath(tileHit);
+                StartCoroutine(MoveUnitThroughPath(currentUnitSelected, path));
+                
                 currentState = State.UnitSelected;
                 UpdateButtonVisual();
-
-                // Recalcular tiles de movimiento si quieres mostrar de nuevo
-                currentUnitSelected.reachableTiles = CalculateTilesInRange(tileHit, currentUnitSelected.movesLeftThisTurn);
             }
         }
-    }
-
-    private void MoveUnitToTile(Unit unit, TileData tile)
-    {
-        if (unit == null || tile == null) return;
-
-        if(unit.unitType == Unit.UnitType.Artillery && (tile.tileType == 2 || unit.currentTile.tileType == 2)) unit.movesLeftThisTurn -= 2;
-        else unit.movesLeftThisTurn--;
-
-        if(unit.currentTile.tileType == 2) unit.attackRange--;
-        if(tile.tileType == 2) unit.attackRange++;
-
-        unit.currentTile.hasUnit = false;
-        unit.currentTile = tile;
-        tile.hasUnit = true;
-        tile.SetOutline(false);
-
-        if(unit.movesLeftThisTurn < 0) unit.movesLeftThisTurn = 0;
-
-        if(tile.currentBuilding != null)
-        {
-            if(unit.isPlayerUnit && tile.currentBuilding.hasBeenClaimed == 1){}
-            else if(!unit.isPlayerUnit && tile.currentBuilding.hasBeenClaimed == 2){}
-            else
-            {
-                
-                if(tile.currentBuilding.isBase)
-                {
-                    if(unit.isPlayerUnit)
-                    {
-                        AudioManager.Instance.PlaySFX(AudioManager.Instance.capturePlayerClip, 1.0f);
-                        playerBaseCount++;
-                        aiBaseCount--;
-                        tile.currentBuilding.hasBeenClaimed = 1;
-                        if(aiBaseCount <= 0) turnManager.EndGame(true);
-                    }
-                    else
-                    {
-                        AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip, 1.0f);
-                        aiBaseCount++;
-                        playerBaseCount--;
-                        tile.currentBuilding.hasBeenClaimed = 2;
-                        if(playerBaseCount <= 0) turnManager.EndGame(false);
-                    }
-                }
-                else
-                {
-                    if(unit.isPlayerUnit)
-                    {
-                        AudioManager.Instance.PlaySFX(AudioManager.Instance.capturePlayerClip, 1.0f);
-                        if(tile.currentBuilding.hasBeenClaimed == 2) turnManager.aiResourceBuildings--;
-                        tile.currentBuilding.hasBeenClaimed = 1;
-                        turnManager.playerResourceBuildings++;
-                    }
-                    else
-                    {
-                        AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip, 1.0f);
-                        if(tile.currentBuilding.hasBeenClaimed == 1) turnManager.playerResourceBuildings--;
-                        tile.currentBuilding.hasBeenClaimed = 2;
-                        turnManager.aiResourceBuildings++;
-                    } 
-                } 
-
-                tile.currentBuilding.UpdateState();          
-            }
-        }
-        Vector3 endPos = new Vector3(tile.transform.position.x, tile.transform.position.y, -1);
-        StartCoroutine(MovementCoroutine(unit, endPos));
-    }
-
-    private IEnumerator MovementCoroutine(Unit unit, Vector3 endPos)
-    {
-        AudioManager.Instance.PlaySFX(AudioManager.Instance.moveClip, 1.0f);
-
-        Vector3 startPos = unit.transform.position;
-        float duration = 0.5f;
-        float elapsed = 0f;
-
-        while(elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / duration;
-            unit.transform.position = Vector3.Lerp(startPos, endPos, t);
-            yield return null;
-        }
-        unit.transform.position = endPos;
     }
 
     private List<TileData> CalculateTilesInRange(TileData startTile, int range)
