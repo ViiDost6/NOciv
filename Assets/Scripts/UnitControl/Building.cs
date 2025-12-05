@@ -10,13 +10,15 @@ public class Building : MonoBehaviour
         switch(hasBeenClaimed)
         {
             case 0:
-                sr.color = Color.black;
+                sr.sprite = Resources.Load<Sprite>("Resource-Neutral");
                 break;
             case 1:
-                sr.color = Color.blue;
+                if(isBase) sr.sprite = Resources.Load<Sprite>("Tower-Cat");
+                else sr.sprite = Resources.Load<Sprite>("Resource-Cat");
                 break;
             case 2:
-                sr.color = Color.red;
+                if(isBase) sr.sprite = Resources.Load<Sprite>("Tower-Dog");
+                else sr.sprite = Resources.Load<Sprite>("Resource-Dog");
                 break;
         }
     }

@@ -39,11 +39,13 @@ public class TurnManager : MonoBehaviour
 
     public void OnEndTurnButtonPressed()
     {
+        AudioManager.Instance.PlaySFX(AudioManager.Instance.buttonClip);
+
         if (currentTurnState == TurnState.PlayerTurn)
         {
             unitManager.DestroyUI();
-            unitManager.ToggleAttackRange(false);
-            unitManager.currentUnitSelected.SetOutline(false);
+            if(unitManager.currentUnitSelected != null) unitManager.ToggleAttackRange(false);
+            if(unitManager.currentUnitSelected != null) unitManager.currentUnitSelected.SetOutline(false);
             unitManager.currentUnitSelected = null;
             unitManager.currentState = UnitManager.State.NoSelection;
             StartCoroutine(ExecuteAITurnRoutine());
@@ -53,6 +55,9 @@ public class TurnManager : MonoBehaviour
     private void StartPlayerTurn()
     {
         currentTurnState = TurnState.PlayerTurn;
+
+        AudioManager.Instance.PlaySFX(AudioManager.Instance.playerTurnStart);
+
         turnIndicatorText.text = $"Turno Jugador";
         turnResourceText.text = $"Recursos: {playerResources}";
 
@@ -155,12 +160,15 @@ public class TurnManager : MonoBehaviour
         if (unitManager.currentUnitSelected != null) unitManager.currentUnitSelected.SetOutline(false);
         unitManager.DestroyUI();
         endTurnButton.interactable = false;
+        AudioManager.Instance.musicSource.Stop();
         if (playerWon)
         {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.victory);
             turnIndicatorText.text = "¡Victoria!";
         }
         else
         {
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.defeat);
             turnIndicatorText.text = "¡Derrota!";
         }
     }

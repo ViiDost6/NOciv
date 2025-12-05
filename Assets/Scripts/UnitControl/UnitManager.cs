@@ -55,7 +55,11 @@ public class UnitManager : MonoBehaviour
 
         currentUnitHover = unitHit;
 
-        if (currentUnitHover != null && IsSelectable(currentUnitHover) && currentUnitHover != currentUnitSelected) currentUnitHover.SetOutline(true);
+        if (currentUnitHover != null && IsSelectable(currentUnitHover) && currentUnitHover != currentUnitSelected)
+        {
+            currentUnitHover.SetOutline(true);
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.hoverClip);
+        }
     }
 
     private void UpdateNoSelection()
@@ -67,6 +71,7 @@ public class UnitManager : MonoBehaviour
         if (currentUnitHover != null && IsSelectable(currentUnitHover) && Input.GetMouseButtonDown(0))
         {
             currentUnitSelected = currentUnitHover;
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.playerUnitSelect);
             currentState = State.UnitSelected;
         }
     }
@@ -232,6 +237,19 @@ public class UnitManager : MonoBehaviour
 
     public void Attack(Unit attacker, Unit defender)
     {
+        switch(attacker.unitType)
+        {
+            case Unit.UnitType.Infantry:
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.infantryAttack);
+                break;
+            case Unit.UnitType.HeavyInfantry:
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.heavyInfantryAttack);
+                break;
+            case Unit.UnitType.Artillery:
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.artilleryAttack);
+                break;
+        }
+
         if(defender.hasArmor && !attacker.hasPiercing)
         {
             defender.health -= attacker.damage - 1;
@@ -309,6 +327,7 @@ public class UnitManager : MonoBehaviour
                 {
                     if(unit.isPlayerUnit)
                     {
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.capturePlayerClip);
                         playerBaseCount++;
                         aiBaseCount--;
                         tile.currentBuilding.hasBeenClaimed = 1;
@@ -316,6 +335,7 @@ public class UnitManager : MonoBehaviour
                     }
                     else
                     {
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip);
                         aiBaseCount++;
                         playerBaseCount--;
                         tile.currentBuilding.hasBeenClaimed = 2;
@@ -326,12 +346,14 @@ public class UnitManager : MonoBehaviour
                 {
                     if(unit.isPlayerUnit)
                     {
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.capturePlayerClip);
                         if(tile.currentBuilding.hasBeenClaimed == 2) turnManager.aiResourceBuildings--;
                         tile.currentBuilding.hasBeenClaimed = 1;
                         turnManager.playerResourceBuildings++;
                     }
                     else
                     {
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip);
                         if(tile.currentBuilding.hasBeenClaimed == 1) turnManager.playerResourceBuildings--;
                         tile.currentBuilding.hasBeenClaimed = 2;
                         turnManager.aiResourceBuildings++;
@@ -347,6 +369,8 @@ public class UnitManager : MonoBehaviour
 
     private IEnumerator MovementCoroutine(Unit unit, Vector3 endPos)
     {
+        AudioManager.Instance.PlaySFX(AudioManager.Instance.moveClip);
+
         Vector3 startPos = unit.transform.position;
         float duration = 0.5f;
         float elapsed = 0f;

@@ -10,11 +10,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1375655697119214620, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.7
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 1375655697119214620, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.7
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 1375655697119214620, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_LocalPosition.x
@@ -58,11 +58,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2689162025832888435, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2689162025832888435, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3738008336104036045, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_IsActive
@@ -95,7 +95,7 @@ PrefabInstance:
     - target: {fileID: 7960225801506409548, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 4686336212447638543, guid: 7c7d3978f1dadbf489bbcb09cee96a28, type: 3}
+      objectReference: {fileID: 5277337616621651790, guid: 6ce3766eb3d7b0b4e9a8ae70da4b9e04, type: 3}
     - target: {fileID: 8518748345492883575, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: m_Name
       value: Player_HeavyInfantry

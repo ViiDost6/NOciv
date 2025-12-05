@@ -8,6 +8,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1032507662994505844, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -7037449416512451123, guid: 02ac25fc080e01b46a8f4a2cdc0b2940, type: 3}
+    - target: {fileID: 1032507662994505844, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
+      propertyPath: m_Color.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1032507662994505844, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
+      propertyPath: m_Color.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1032507662994505844, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
+      propertyPath: m_Color.r
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1591177439199134799, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
       propertyPath: m_Name
       value: Enemy_Artillery
@@ -17,16 +33,32 @@ PrefabInstance:
       value: Untagged
       objectReference: {fileID: 0}
     - target: {fileID: 4308877367586655854, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -5888188136908350448, guid: d6ab3bf9ad70e954a9d60fd258f0ebaf, type: 3}
+    - target: {fileID: 4308877367586655854, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
       propertyPath: m_Color.b
-      value: 0.20392157
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4308877367586655854, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
       propertyPath: m_Color.g
-      value: 0.20392157
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4308877367586655854, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
       propertyPath: m_Color.r
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6038273535681911541, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8303261804361953316, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8303261804361953316, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 8303261804361953316, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
       propertyPath: m_LocalPosition.x

@@ -202,7 +202,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: -0.60575, y: -0.51081}
+  m_AnchoredPosition: {x: -0.6, y: -0.6}
   m_SizeDelta: {x: 20.4132, y: 3.479}
   m_Pivot: {x: 0, y: 0}
 --- !u!223 &6753956173835501814
@@ -454,6 +454,7 @@ MonoBehaviour:
   movesTotal: 3
   attackRange: 1
   health: 0
+  maxHealth: 0
   damage: 0
   hasPiercing: 0
   hasArmor: 0

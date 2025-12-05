@@ -9,6 +9,14 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 81920107884617165, guid: ca83818d83e29ae40beea2c32f930825, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 81920107884617165, guid: ca83818d83e29ae40beea2c32f930825, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 81920107884617165, guid: ca83818d83e29ae40beea2c32f930825, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -48,13 +56,21 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2437666417408669468, guid: ca83818d83e29ae40beea2c32f930825, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5319912638531347335, guid: ca83818d83e29ae40beea2c32f930825, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 1691826359244713421, guid: c537abdce12c9b344889b65fdb9e0db4, type: 3}
     - target: {fileID: 5319912638531347335, guid: ca83818d83e29ae40beea2c32f930825, type: 3}
       propertyPath: m_Color.b
-      value: 0.20392157
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5319912638531347335, guid: ca83818d83e29ae40beea2c32f930825, type: 3}
       propertyPath: m_Color.g
-      value: 0.20392157
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5319912638531347335, guid: ca83818d83e29ae40beea2c32f930825, type: 3}
       propertyPath: m_Color.r
@@ -68,6 +84,10 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Untagged
       objectReference: {fileID: 0}
+    - target: {fileID: 8956570347303644573, guid: ca83818d83e29ae40beea2c32f930825, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 4061395366723177110, guid: 2ab9c52752906e941921f5c204d3787d, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
