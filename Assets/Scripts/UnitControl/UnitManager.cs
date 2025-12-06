@@ -157,6 +157,45 @@ public class UnitManager : MonoBehaviour
             unit.currentTile = tile;
             tile.hasUnit = true;
 
+            // ---- CLAIM DE EDIFICIOS ----
+            if (tile.currentBuilding != null)
+            {
+                int team = unit.isPlayerUnit ? 1 : 2;
+
+                if (tile.currentBuilding.hasBeenClaimed != team)
+                {
+                    tile.currentBuilding.hasBeenClaimed = team;
+                    if(unit.isPlayerUnit) AudioManager.Instance.PlaySFX(AudioManager.Instance.capturePlayerClip, 1.0f);
+                    else AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip, 1.0f);
+
+                    tile.currentBuilding.UpdateState();
+
+                    // Actualizar contadores si es una base
+                    if (tile.currentBuilding.isBase)
+                    {
+                        if (team == 1)
+                        {
+                            UnitManager.Instance.playerBaseCount++;
+                            UnitManager.Instance.aiBaseCount--;
+                        }
+                        else 
+                        {
+                            UnitManager.Instance.aiBaseCount++;
+                            UnitManager.Instance.playerBaseCount--;
+                        }
+                    }
+
+                    if(UnitManager.Instance.aiBaseCount <= 0)
+                    {
+                        TurnManager.Instance.EndGame(true);
+                    }
+                    else if(UnitManager.Instance.playerBaseCount <= 0)
+                    {
+                        TurnManager.Instance.EndGame(false);
+                    }
+                }
+            }
+
             // Mantener outline desactivado en cada paso
             tile.SetOutline(false);
         }
@@ -291,7 +330,10 @@ public class UnitManager : MonoBehaviour
 
             currentUnitSelected.shownAttackTiles.Clear();
 
-            currentUnitSelected.attackableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, currentUnitSelected.attackRange);
+            int bonusRange = (currentUnitSelected.currentTile.tileType == 2) ? 1 : 0;
+            int finalRange = currentUnitSelected.attackRange + bonusRange;
+            currentUnitSelected.attackableTiles = CalculateTilesInRange(currentUnitSelected.currentTile, finalRange);
+
             currentUnitSelected.shownAttackTiles.AddRange(currentUnitSelected.attackableTiles);
 
             foreach (TileData tile in currentUnitSelected.attackableTiles) tile.SetOutline(true, Color.red);
