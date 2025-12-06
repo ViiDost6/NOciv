@@ -3,113 +3,82 @@ using System.Collections.Generic;
 
 public class CommanderAI2 : MonoBehaviour
 {
-    public enum SituationState { ATTACK, DEFENSE, EXPLORE }
+    // Estado actual de la FSM
+    private CommanderState currentState;
     
-    [Header("AI Settings")]
-    public SituationState currentGlobalOrder;
-    
+    // Referencias públicas para que los Estados las usen (Contexto compartido)
+    public StructureManager structureManager;
+    public TurnManager turnManager;
     private InfluenceMap2 influenceMap;
-    private StructureManager structureManager;
-    private TurnManager turnManager;
+
+    [Header("Debug Info")]
+    [SerializeField] private string currentStateName; // Para ver en el inspector
 
     void Start()
     {
         influenceMap = FindObjectOfType<InfluenceMap2>();
         structureManager = FindObjectOfType<StructureManager>();
         turnManager = FindObjectOfType<TurnManager>();
-        
-        // Nos aseguramos de que el mapa de influencia tenga referencias
-        if(influenceMap != null)
-        {
+
+        if (influenceMap != null)
             influenceMap.Initialize(FindObjectOfType<MapGenerator>(), structureManager);
-        }
+
+        // Estado inicial por defecto
+        ChangeState(new ExploreState(this));
     }
-    
+
+    // --- AQUÍ ESTÁ LA LÓGICA CENTRALIZADA ---
     public void PrepareTurn()
     {
-        Debug.Log("--- Commander AI: Preparando Turno ---");
+        Debug.Log("--- Commander AI: Inicio de Turno (FSM) ---");
 
-        if (structureManager == null)
+        // PASO 1: Tareas Comunes (Centralizadas)
+        // No importa en qué estado estemos, SIEMPRE hay que hacer esto
+        UpdateGlobalData();
+
+        // PASO 2: Transiciones
+        // Preguntamos al estado actual si quiere cambiar
+        CommanderState nextState = currentState.CheckTransitions();
+        if (nextState != null && nextState != currentState)
         {
-            Debug.LogError("CommanderAI: CRÍTICO - StructureManager no encontrado.");
-            return;
+            ChangeState(nextState);
         }
 
-        // 0. Asegurarnos de que el StructureManager tiene datos actualizados
+        // PASO 3: Ejecución Específica
+        // Delegamos la decisión estratégica al estado
+        currentState.UpdateStrategy();
+    }
+
+    private void UpdateGlobalData()
+    {
+        // 1. Escanear estructuras (si se destruyó alguna el turno anterior)
         structureManager.ScanStructuresInScene();
 
-        // 1. Calcular Mapa de Amenazas
+        // 2. Actualizar Mapa de Amenazas
+        // Esto es caro computacionalmente, así que lo hacemos UNA vez aquí
+        // y todos los estados se benefician del mapa ya calculado.
         List<Unit> playerUnits = turnManager.GetAllUnits(true); 
         influenceMap.CalculateThreatMap(playerUnits);
-
-        // 2. Decidir Estrategia
-        DecideGlobalStrategy(playerUnits);
-
-        // 3. Establecer Mapa de Deseos
-        SetGoals();
-    }
-
-    void DecideGlobalStrategy(List<Unit> playerUnits)
-    {
-        int myUnitsCount = turnManager.GetAllUnits(false).Count;
-        int enemyUnitsCount = playerUnits.Count;
         
-        Debug.Log($"Commander Stats: Mis Unidades ({myUnitsCount}) vs Enemigos ({enemyUnitsCount})");
-
-        if (myUnitsCount > enemyUnitsCount * 1.2f) // Un poco más agresivo
-            currentGlobalOrder = SituationState.ATTACK;
-        else if (myUnitsCount < enemyUnitsCount * 0.8f)
-            currentGlobalOrder = SituationState.DEFENSE;
-        else
-            currentGlobalOrder = SituationState.EXPLORE;
-            
-        Debug.Log($"Commander Orden Global: <color=yellow>{currentGlobalOrder}</color>");
+        Debug.Log("[Central] Mapas de Influencia y Estructuras actualizados.");
     }
 
-    void SetGoals()
+    private void ChangeState(CommanderState newState)
     {
-        List<Vector2Int> targets = new List<Vector2Int>();
-        float priority = 10f;
-        string debugTargetType = "";
-
-        if (currentGlobalOrder == SituationState.ATTACK)
-        {
-            // Atacar Torres del Jugador
-            debugTargetType = "Torres Jugador";
-            foreach(var pos in structureManager.PlayerTowerPositions)
-            {
-                targets.Add(pos);
-            }
-            priority = 20f;
-        }
-        else if (currentGlobalOrder == SituationState.DEFENSE)
-        {
-            // Defender Mis Torres
-            debugTargetType = "Mis Torres (Enemigas)";
-            foreach(var pos in structureManager.EnemyTowerPositions) 
-            {
-                targets.Add(pos);
-            }
-            priority = 15f;
-        }
-        else 
-        {
-            // Explorar Recursos
-            debugTargetType = "Recursos";
-            foreach(var pos in structureManager.ResourcePositions)
-            {
-                targets.Add(pos);
-            }
-            priority = 10f;
-        }
-
-        Debug.Log($"Commander: Estableciendo objetivos. Tipo: {debugTargetType}. Cantidad encontrada: {targets.Count}");
-
-        if (targets.Count == 0)
-        {
-            Debug.LogWarning("CommanderAI: ¡No se encontraron objetivos para la orden actual! Revisa StructureManager.");
-        }
-
-        influenceMap.SetStrategicGoals(targets, priority);
+        if (currentState != null) currentState.Exit();
+        
+        currentState = newState;
+        currentStateName = currentState.GetType().Name; // Update visual inspector
+        
+        currentState.Enter();
     }
+
+    // --- Helpers para los Estados ---
+    // Métodos públicos que simplifican la vida a las clases State
+    
+    public InfluenceMap2 GetInfluenceMap() => influenceMap;
+    
+    public int GetMyUnitCount() => turnManager.GetAllUnits(false).Count;
+    
+    public int GetEnemyUnitCount() => turnManager.GetAllUnits(true).Count;
 }

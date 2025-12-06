@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // --- CONDICIONES ---
@@ -72,18 +73,12 @@ public class MoveToStrategicPositionNode : Node
     public override NodeState Evaluate(GameObject agent)
     {
         AIUnitController ctrl = agent.GetComponent<AIUnitController>();
-        TileData bestTile = ctrl.GetBestTacticalMovePosition();
+        Unit u = agent.GetComponent<Unit>();
+        TileData objective = ctrl.GetObjective(); 
+        List<TileData> path = ctrl.CalculatePath(u.currentTile,objective);
         
-        if (bestTile != null)
-        {
-            ctrl.PerformMove(bestTile);
-            state = NodeState.Success;
-        }
-        else
-        {
-            // No hay mejor posición que la actual o no se puede mover
-            state = NodeState.Failure;
-        }
-        return state;
+        UnitManager.Instance
+        //if(llamada) return NodeState.Success;
+        return NodeState.Failure;
     }
 }
