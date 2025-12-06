@@ -175,21 +175,21 @@ public class UnitManager : MonoBehaviour
                     {
                         if (team == 1)
                         {
-                            UnitManager.Instance.playerBaseCount++;
-                            UnitManager.Instance.aiBaseCount--;
+                            playerBaseCount++;
+                            aiBaseCount--;
                         }
                         else 
                         {
-                            UnitManager.Instance.aiBaseCount++;
-                            UnitManager.Instance.playerBaseCount--;
+                            aiBaseCount++;
+                            playerBaseCount--;
                         }
                     }
 
-                    if(UnitManager.Instance.aiBaseCount <= 0)
+                    if(aiBaseCount <= 0)
                     {
                         TurnManager.Instance.EndGame(true);
                     }
-                    else if(UnitManager.Instance.playerBaseCount <= 0)
+                    else if(playerBaseCount <= 0)
                     {
                         TurnManager.Instance.EndGame(false);
                     }
@@ -211,6 +211,94 @@ public class UnitManager : MonoBehaviour
         }
         UpdateButtonVisual();
     }
+
+    public IEnumerator AI_MoveAlongFullPath(Unit unit, List<TileData> fullPath)
+    {
+        if (unit == null || fullPath == null || fullPath.Count == 0) yield break;
+
+        foreach (TileData nextTile in fullPath)
+        {
+            if (unit.movesLeftThisTurn <= 0) yield break;
+            if(nextTile == unit.currentTile) continue;
+
+            int stepCost = 1;
+            if (unit.unitType == Unit.UnitType.Artillery && (unit.currentTile.tileType == 2 || nextTile.tileType == 2))
+            {
+                stepCost = 2;
+                if (unit.movesLeftThisTurn == 1) stepCost = 1;
+            }
+            unit.movesLeftThisTurn -= stepCost;
+
+            // Si el destino no tiene unidad enemiga -> Intentar atacar a cualquier unidad a rango
+            // Si el destino tiene unidad enemiga -> Comprobar si está a rango, si es así atacar y parar el movimiento
+
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.moveClip, 1.0f);
+
+            Vector3 startPos = unit.transform.position;
+            Vector3 endPos = new Vector3(nextTile.transform.position.x, nextTile.transform.position.y, -1);
+
+            float duration = 0.3f;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / duration;
+                unit.transform.position = Vector3.Lerp(startPos, endPos, t);
+                yield return null;
+            }
+
+            unit.transform.position = endPos;
+
+            unit.currentTile.hasUnit = false;
+            unit.currentTile = nextTile;
+            nextTile.hasUnit = true;
+
+            if (nextTile.currentBuilding != null)
+            {
+                int team = unit.isPlayerUnit ? 1 : 2;
+
+                if (nextTile.currentBuilding.hasBeenClaimed != team)
+                {
+                    nextTile.currentBuilding.hasBeenClaimed = team;
+
+                    if (unit.isPlayerUnit)
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.capturePlayerClip, 1.0f);
+                    else
+                        AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip, 1.0f);
+
+                    nextTile.currentBuilding.UpdateState();
+
+                    if (nextTile.currentBuilding.isBase)
+                    {
+                        if (team == 1)
+                        {
+                            playerBaseCount++;
+                            aiBaseCount--;
+                        }
+                        else
+                        {
+                            aiBaseCount++;
+                            playerBaseCount--;
+                        }
+                    }
+
+                    if (aiBaseCount <= 0)
+                    {
+                        TurnManager.Instance.EndGame(true);
+                        yield break;
+                    }
+                    else if (playerBaseCount <= 0)
+                    {
+                        TurnManager.Instance.EndGame(false);
+                        yield break;
+                    }
+                }
+            }
+        }
+        // Intentar atacar a cualquier unidad enemiga a rango una vez terminado el movimiento
+    }
+
 
     private void HandleHover()
     {
