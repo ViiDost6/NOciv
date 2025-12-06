@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 // --- CONDICIONES ---
 
@@ -74,11 +75,9 @@ public class MoveToStrategicPositionNode : Node
     {
         AIUnitController ctrl = agent.GetComponent<AIUnitController>();
         Unit u = agent.GetComponent<Unit>();
-        TileData objective = ctrl.GetObjective(); 
-        List<TileData> path = ctrl.CalculatePath(u.currentTile,objective);
-        
-        UnitManager.Instance
-        //if(llamada) return NodeState.Success;
-        return NodeState.Failure;
+        //TileData objective = ctrl.GetObjective(); 
+        List<TileData> path = ctrl.CalculatePath(u.currentTile,ctrl.obj);
+        ctrl.MoveAlongPath(path);
+        return state;
     }
 }

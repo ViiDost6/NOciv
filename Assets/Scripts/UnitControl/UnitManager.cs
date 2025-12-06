@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine.EventSystems;
 using System.Collections.Generic;
 using System.Collections;
+using System;
 
 public class UnitManager : MonoBehaviour
 {
@@ -212,9 +213,18 @@ public class UnitManager : MonoBehaviour
         UpdateButtonVisual();
     }
 
-    public IEnumerator AI_MoveAlongFullPath(Unit unit, List<TileData> fullPath)
+    public void AIMove(Unit unit, List<TileData> path, Action onComplete)
     {
-        if (unit == null || fullPath == null || fullPath.Count == 0) yield break;
+        StartCoroutine(AI_MoveAlongFullPath(unit, path, onComplete));
+    }
+
+    public IEnumerator AI_MoveAlongFullPath(Unit unit, List<TileData> fullPath, Action onComplete)
+    {
+        if (unit == null || fullPath == null || fullPath.Count == 0) 
+        {
+            onComplete?.Invoke(); // Avisar que terminó (aunque sea error)
+            yield break;
+        }
 
         foreach (TileData nextTile in fullPath)
         {
@@ -296,6 +306,8 @@ public class UnitManager : MonoBehaviour
                 }
             }
         }
+        // Una vez terminado todo el camino, ejecutamos el callback
+        onComplete?.Invoke();
         // Intentar atacar a cualquier unidad enemiga a rango una vez terminado el movimiento
     }
 

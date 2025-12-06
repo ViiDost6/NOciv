@@ -81,14 +81,14 @@ public class ExploreState : CommanderState
     public override CommanderState CheckTransitions()
     {
         // En cuanto detectamos amenaza real -> Defensa o Ataque
-        if (ctx.GetEnemyUnitCount() > 0)
-        {
-            // Decisión simple basada en números
-            if (ctx.GetMyUnitCount() > ctx.GetEnemyUnitCount())
-                return new AttackState(ctx);
-            else
-                return new DefenseState(ctx);
-        }
+        // if (ctx.GetEnemyUnitCount() > 0)
+        // {
+        //     // Decisión simple basada en números
+        //     if (ctx.GetMyUnitCount() > ctx.GetEnemyUnitCount())
+        //         return new AttackState(ctx);
+        //     else
+        //         return new DefenseState(ctx);
+        // }
 
         return this;
     }
