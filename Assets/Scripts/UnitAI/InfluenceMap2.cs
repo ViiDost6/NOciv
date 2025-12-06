@@ -4,8 +4,10 @@ using System.Collections.Generic;
 public class InfluenceMap2 : MonoBehaviour
 {
     // Capa 0: Amenaza (Donde están los enemigos y su rango de ataque)
-    // Capa 1: Deseo (Donde el Comandante quiere que vayamos)
+    // Capa 1: Aliado (Donde están los aliados)
+    // Capa 2: Deseo (Donde el Comandante quiere que vayamos)
     private float[,] threatMap;
+    private float[,] allyMap;
     private float[,] desireMap;
     
     private MapGenerator mapGenerator;
@@ -16,6 +18,7 @@ public class InfluenceMap2 : MonoBehaviour
         mapGenerator = mapGen;
         structureManager = structMan;
         threatMap = new float[mapGen.mapHeight, mapGen.mapWidth];
+        allyMap = new float[mapGen.mapHeight, mapGen.mapWidth];
         desireMap = new float[mapGen.mapHeight, mapGen.mapWidth];
     }
 
@@ -34,6 +37,21 @@ public class InfluenceMap2 : MonoBehaviour
         }
     }
 
+    public void CalculateAllyMap(List<Unit> allyUnits)
+    {
+        ClearMap(allyMap);
+        
+        foreach (var ally in allyUnits)
+        {
+            if (ally == null) continue;
+            
+            // La amenaza es mayor en la posición del enemigo y decae con la distancia
+            // Calculamos basado en su daño y rango
+            float threatValue = ally.damage * 1.5f; 
+            AddInfluence(allyMap, ally.currentTile.gridPosition, threatValue, ally.attackRange + 1, 0.5f);
+        }
+    }
+
     // El Comandante usa esto para decir "QUIERO ESTA ZONA"
     public void SetStrategicGoals(List<Vector2Int> targets, float priority)
     {
@@ -43,6 +61,24 @@ public class InfluenceMap2 : MonoBehaviour
             // Creamos un gradiente de atracción hacia el objetivo
             AddInfluence(desireMap, target, priority, 15, 0.8f);
         }
+    }
+
+    // El comandante 
+    public void AddStrategicGoals(List<Vector2Int> targets, float priority)
+    {
+        
+    }
+
+    public float GetInfluenceAroundPoint(Vector2Int origin, int radius )
+    {
+        return 0;
+    }
+
+    public float GetTotalMapControlRatio()
+    {
+
+        return 0;
+        
     }
 
     // Algoritmo de propagación de influencia (Flood fill ponderado)

@@ -1,6 +1,9 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Tilemaps;
+using Utils;
+using System.IO;
 
 [RequireComponent(typeof(Unit))]
 [RequireComponent(typeof(BehaviourTreeRunner))]
@@ -152,6 +155,63 @@ public class AIUnitController : MonoBehaviour
         return bestTarget;
     }
 
+    public struct PathNode
+    {
+        public TileData parent;
+        public float carriedWeight;
+        public PathNode(TileData parent, float carriedWeight)
+        {
+            this.parent = parent;
+            this.carriedWeight = carriedWeight;
+        }
+    }
+
+    public List<TileData> CalculatePath(TileData origin, TileData destination)
+    {
+        Dictionary<TileData,PathNode> graphNotes = new();
+        PriorityQueue<TileData, float> pQueue = new();
+
+        graphNotes.Add(origin, new(null, 0));
+        pQueue.Enqueue(origin, 0);
+
+        while(pQueue.Count > 0)
+        {
+            TileData current = pQueue.Dequeue();
+            PathNode extraData = graphNotes[current];
+
+            if(current == destination) break;
+
+            foreach(TileData neighbour in current.neighbors)
+            {
+                float threatWeight = influenceMap.GetThreatAt(neighbour.gridPosition);
+                if(!graphNotes.ContainsKey(neighbour) || graphNotes[neighbour].carriedWeight > extraData.carriedWeight + threatWeight)
+                {
+                    PathNode pn = new(current, threatWeight + extraData.carriedWeight);
+                    graphNotes[neighbour] = pn;
+                    pQueue.Enqueue(neighbour, threatWeight);
+                }
+            }
+        }
+
+
+        return ReconstructPath(graphNotes, destination);
+        
+    }
+
+    List<TileData> ReconstructPath(Dictionary<TileData, PathNode> dct, TileData destination)
+    {
+        List<TileData> path = new();
+        TileData current = destination;
+        while(current != null)
+        {
+            path.Add(current);
+            current = dct[current].parent;
+        }
+
+        path.Reverse();
+        return path;
+    }
+
     private float CalculateAttackScore(Unit enemy)
     {
         float score = 10f;
@@ -245,5 +305,11 @@ public class AIUnitController : MonoBehaviour
             }
         }
         return inRange;
+    }
+
+    public TileData GetObjective()
+    {
+        //influenceMap.
+        throw new System.NotImplementedException();
     }
 }
