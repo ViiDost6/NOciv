@@ -44,6 +44,7 @@ public class TurnManager : MonoBehaviour
         if (currentTurnState == TurnState.PlayerTurn)
         {
             unitManager.DestroyUI();
+            unitManager.CloseBaseUI();
             if(unitManager.currentUnitSelected != null) unitManager.ToggleAttackRange(false);
             if(unitManager.currentUnitSelected != null) unitManager.currentUnitSelected.SetOutline(false);
             unitManager.currentUnitSelected = null;
@@ -57,11 +58,10 @@ public class TurnManager : MonoBehaviour
         currentTurnState = TurnState.PlayerTurn;
 
         AudioManager.Instance.PlaySFX(AudioManager.Instance.playerTurnStart, 1.0f);
+        playerResources += resourcePerTurn * (playerResourceBuildings + 2);
 
         turnIndicatorText.text = $"Turno Jugador";
         turnResourceText.text = $"{playerResources}";
-
-        playerResources += resourcePerTurn * (playerResourceBuildings + 2);
 
         endTurnButton.interactable = true;
         ResetUnitsActions(true);

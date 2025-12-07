@@ -10,15 +10,21 @@ public class UnitManager : MonoBehaviour
 {
     public static UnitManager Instance;
     public TurnManager turnManager;
+    public GameObject infantryPrefab;
+    public GameObject heavyInfantryPrefab;
+    public GameObject artilleryPrefab;
     public GameObject unitActionUIPrefab;
+    public GameObject baseUIPrefab;
     public StructureManager structureManager;
 
-    public enum State { NoSelection, UnitSelected, SelectingMovement, SelectingAttack }
+    public enum State { NoSelection, UnitSelected, SelectingMovement, SelectingAttack}
 
     private Unit currentUnitHover = null;
+    private Building currentBuildingHover = null;
     private TileData currentTileHover = null;
     public Unit currentUnitSelected = null;
     private GameObject currentUI = null;
+    private GameObject currentBaseUI = null;
     public State currentState = State.NoSelection;
 
     private Button attackBtn;
@@ -26,6 +32,7 @@ public class UnitManager : MonoBehaviour
 
     public int playerBaseCount = 0;
     public int aiBaseCount = 0;
+    private Building currentBuildingSelected = null;
 
     private void Awake()
     {
@@ -314,20 +321,118 @@ public class UnitManager : MonoBehaviour
 
     private void HandleHover()
     {
+        if(currentBuildingSelected != null)
+        {
+            if (currentUnitHover != null && currentUnitHover != currentUnitSelected)
+            {
+                currentUnitHover.SetOutline(false);
+                currentUnitHover = null;
+            }
+            return;
+        }
+
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero);
-        Unit unitHit = hit.collider != null ? hit.collider.GetComponent<Unit>() : null;
 
-        if (unitHit == currentUnitHover) return;
+        Unit unitHit = hit.collider != null ? hit.collider.GetComponent<Unit>() : null;
+        Building buildingHit = hit.collider != null ? hit.collider.GetComponent<Building>() : null;
+
+
+        if (unitHit == currentUnitHover && buildingHit == currentBuildingHover) return;
 
         if (currentUnitHover != null && currentUnitHover != currentUnitSelected) currentUnitHover.SetOutline(false);
+        if (currentBuildingHover != null) currentBuildingHover.SetOutline(false);
 
         currentUnitHover = unitHit;
+        currentBuildingHover = buildingHit;
 
         if (currentUnitHover != null && IsSelectable(currentUnitHover) && currentUnitHover != currentUnitSelected)
         {
             currentUnitHover.SetOutline(true);
             AudioManager.Instance.PlaySFX(AudioManager.Instance.hoverClip, 1.0f);
+            return;
+        }
+
+        if (currentBuildingHover != null && currentBuildingHover.hasBeenClaimed == 1)
+        {
+            if(currentBuildingHover.tile != null && currentBuildingHover.tile.hasUnit) return;
+
+            currentBuildingHover.SetOutline(true);
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.hoverClip, 1.0f);
+            return;
+        }
+    }
+
+    public void OpenBaseUI(Building building)
+    {
+        if (currentBaseUI != null) Destroy(currentBaseUI);
+
+        currentBaseUI = Instantiate(baseUIPrefab, building.transform);
+
+        Transform canvas = currentBaseUI.transform.Find("Canvas");
+        GameObject createBtnObj = canvas.Find("CreateButton").gameObject;
+        GameObject unitButtonsObj = canvas.Find("UnitButtons").gameObject;
+
+        Button createBtn = createBtnObj.GetComponent<Button>();
+        Button infantryBtn = unitButtonsObj.transform.Find("InfantryButton").GetComponent<Button>();
+        Button heavyBtn = unitButtonsObj.transform.Find("HeavyInfantryButton").GetComponent<Button>();
+        Button artilleryBtn = unitButtonsObj.transform.Find("ArtilleryButton").GetComponent<Button>();
+
+        // Ocultar UnitButtons al inicio
+        unitButtonsObj.SetActive(false);
+
+        // Toggle del CreateButton
+        createBtn.onClick.RemoveAllListeners();
+        createBtn.onClick.AddListener(() =>
+        {
+            unitButtonsObj.SetActive(!unitButtonsObj.activeSelf);
+        });
+
+        // --- Botones de Unidad ---
+        if(infantryPrefab.GetComponent<Unit>().cost > turnManager.playerResources) infantryBtn.interactable = false;
+        infantryBtn.onClick.RemoveAllListeners();
+        infantryBtn.onClick.AddListener(() =>
+        {
+            CreateNewUnit(infantryPrefab, building.tile);
+            turnManager.playerResources -= infantryPrefab.GetComponent<Unit>().cost;
+            CloseBaseUI();
+            turnManager.turnResourceText.text = $"{turnManager.playerResources}";
+        });
+
+        if(heavyInfantryPrefab.GetComponent<Unit>().cost > turnManager.playerResources) heavyBtn.interactable = false;
+        heavyBtn.onClick.RemoveAllListeners();
+        heavyBtn.onClick.AddListener(() =>
+        {
+            CreateNewUnit(heavyInfantryPrefab, building.tile);
+            turnManager.playerResources -= heavyInfantryPrefab.GetComponent<Unit>().cost;
+            CloseBaseUI();
+            turnManager.turnResourceText.text = $"{turnManager.playerResources}";
+        });
+
+        if(artilleryPrefab.GetComponent<Unit>().cost > turnManager.playerResources) artilleryBtn.interactable = false;
+        artilleryBtn.onClick.RemoveAllListeners();
+        artilleryBtn.onClick.AddListener(() =>
+        {
+            CreateNewUnit(artilleryPrefab, building.tile);
+            turnManager.playerResources -= artilleryPrefab.GetComponent<Unit>().cost;
+            CloseBaseUI();
+            turnManager.turnResourceText.text = $"{turnManager.playerResources}";
+        });
+
+    }
+
+    public void CloseBaseUI()
+    {
+        if (currentBaseUI != null)
+        {
+            currentBaseUI.SetActive(false);
+            currentBaseUI = null;
+        }
+
+        if (currentBuildingSelected != null)
+        {
+            currentBuildingSelected.SetOutline(false);
+            currentBuildingSelected = null;
         }
     }
 
@@ -337,11 +442,47 @@ public class UnitManager : MonoBehaviour
 
         if (EventSystem.current.IsPointerOverGameObject()) return;
 
+        if (currentBuildingSelected != null && Input.GetMouseButtonDown(0))
+        {
+            Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero);
+
+            Building buildingHit = hit.collider != null ? hit.collider.GetComponent<Building>() : null;
+
+            // Si NO clicas la misma base → deseleccionar
+            if (buildingHit != currentBuildingSelected)
+            {
+                CloseBaseUI();                  // <-- primero cerrar UI y outline
+                currentBuildingSelected = null; // <-- después limpiar referencia
+                return;
+            }
+        }
+
+        if (currentBuildingHover != null && currentBuildingHover.hasBeenClaimed == 1 && Input.GetMouseButtonDown(0))
+        {
+            if (currentBuildingHover.tile != null && currentBuildingHover.tile.hasUnit) return;
+
+            currentBuildingSelected = currentBuildingHover;
+            currentBuildingSelected.SetOutline(true);
+            OpenBaseUI(currentBuildingHover);
+            return;
+        }
+
         if (currentUnitHover != null && IsSelectable(currentUnitHover) && Input.GetMouseButtonDown(0))
         {
+            CloseBaseUI();
             currentUnitSelected = currentUnitHover;
             AudioManager.Instance.PlaySFX(AudioManager.Instance.playerUnitSelect, 1.0f);
             currentState = State.UnitSelected;
+        }
+
+        if (currentBaseUI != null && Input.GetMouseButtonDown(0))
+        {
+            if (!EventSystem.current.IsPointerOverGameObject())  // no tocar UI
+            {
+                // Click en el mundo → cerrar base UI
+                CloseBaseUI();
+            }
         }
     }
 
@@ -355,6 +496,7 @@ public class UnitManager : MonoBehaviour
         {
             currentUnitSelected.SetOutline(false);
             currentUnitSelected = null;
+            CloseBaseUI();
             DestroyUI();
             if(currentUnitHover != null) currentUnitHover.SetOutline(true);
             currentState = State.NoSelection;
@@ -673,5 +815,20 @@ public class UnitManager : MonoBehaviour
 
         attackBtn = null;
         moveBtn = null;
+    }
+
+    public void CreateNewUnit(GameObject unitPrefab, TileData tile)
+    {
+        GameObject newUnit = Instantiate(unitPrefab, tile.transform);
+        newUnit.transform.position = new Vector3(tile.transform.position.x, tile.transform.position.y, -1);
+
+        Unit u = newUnit.GetComponent<Unit>();
+        u.isPlayerUnit = true;
+        u.currentTile = tile;
+        u.movesLeftThisTurn = u.movesTotal;
+        u.hasAttackedThisTurn = false;
+        tile.hasUnit = true;
+
+        u.outline = newUnit.transform.Find("Outline").gameObject;
     }
 }
