@@ -506,23 +506,16 @@ public class UnitManager : MonoBehaviour
         {
             if(currentUnitSelected.hasAttackedThisTurn) attackBtn.interactable = false;
             bool active = currentState == State.SelectingAttack;
-            ColorBlock cb = attackBtn.colors;
-            cb.normalColor = active ? Color.red : Color.white;
-            attackBtn.colors = cb;
-            Image img = attackBtn.GetComponent<Image>();
-            if (img != null) img.color = cb.normalColor;
+
+            attackBtn.GetComponent<Image>().sprite = active ? Resources.Load<Sprite>("Action-Dialog-Selected") : Resources.Load<Sprite>("Action-Dialog");
         }
 
         if (moveBtn != null)
         {
             if(currentUnitSelected.movesLeftThisTurn <= 0) moveBtn.interactable = false;
             bool active = currentState == State.SelectingMovement;
-            ColorBlock cb = moveBtn.colors;
-            cb.normalColor = active ? Color.grey : Color.white;
-            moveBtn.colors = cb;
-            moveBtn.GetComponentInChildren<TMP_Text>().text = $"Moves: {currentUnitSelected.movesLeftThisTurn}";
-            Image img = moveBtn.GetComponent<Image>();
-            if (img != null) img.color = cb.normalColor;
+            
+            moveBtn.GetComponent<Image>().sprite = active ? Resources.Load<Sprite>("Action-Dialog-Selected") : Resources.Load<Sprite>("Action-Dialog");
         }
     }
 

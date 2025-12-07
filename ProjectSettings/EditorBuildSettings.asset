@@ -13,9 +13,6 @@ EditorBuildSettings:
     guid: 63242e25192a83a4ead4a0e25eecb231
   - enabled: 1
     path: Assets/Scenes/Juego.unity
-    guid: e4f1f1153dfee7006af7ae7765aadd09
-  - enabled: 1
-    path: Assets/Scenes/UnitTest.unity
     guid: edf40ba5ae80f2c4db8cb4d06c2e1914
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

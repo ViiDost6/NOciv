@@ -59,7 +59,7 @@ public class TurnManager : MonoBehaviour
         AudioManager.Instance.PlaySFX(AudioManager.Instance.playerTurnStart, 1.0f);
 
         turnIndicatorText.text = $"Turno Jugador";
-        turnResourceText.text = $"Recursos: {playerResources}";
+        turnResourceText.text = $"{playerResources}";
 
         playerResources += resourcePerTurn * (playerResourceBuildings + 2);
 
@@ -71,7 +71,7 @@ public class TurnManager : MonoBehaviour
     private IEnumerator ExecuteAITurnRoutine()
     {
         currentTurnState = TurnState.AIProcessing;
-        turnIndicatorText.text = "Turno IA: Pensando...";
+        turnIndicatorText.text = "Turno IA";
 
         aiResources += resourcePerTurn * (aiResourceBuildings + 2);
 
@@ -82,7 +82,6 @@ public class TurnManager : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
 
         currentTurnState = TurnState.AIExecuting;
-        turnIndicatorText.text = "Turno IA: Ejecutando...";
 
         List<Unit> aiUnits = GetAllUnits(false);
         bool anyUnitActed = true;
