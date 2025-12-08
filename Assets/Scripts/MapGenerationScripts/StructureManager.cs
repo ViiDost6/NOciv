@@ -284,6 +284,7 @@ public class StructureManager : MonoBehaviour
         Vector3 worldPosition = tile.transform.position;
         GameObject tower = Instantiate(towerPrefab, worldPosition, Quaternion.identity);
         tower.transform.SetParent(transform);
+        tower.GetComponent<Building>().tile = tile;
         tower.name = $"{owner}_Tower_{position.x}_{position.y}"; // Nombre clave para el parseo
         
         // --- FIX CRÍTICO: Asignar Building al TileData ---

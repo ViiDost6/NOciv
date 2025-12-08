@@ -124,6 +124,7 @@ public class TurnManager : MonoBehaviour
                 unitManager.ToggleAttackRange(false);
                 unitManager.currentUnitSelected.SetOutline(false);
             }
+            unitManager.CloseBaseUI();
             unitManager.currentUnitSelected = null;
             unitManager.currentState = UnitManager.State.NoSelection;
         }
@@ -141,7 +142,7 @@ public class TurnManager : MonoBehaviour
         // 2. Cobrar Ingresos
         int income = (resourcePerTurn * 2) + (resourcePerTurn * playerResourceBuildings);
         playerResources += income;
-
+        
         if(AudioManager.Instance != null)
             AudioManager.Instance.PlaySFX(AudioManager.Instance.playerTurnStart, 1.0f);
 

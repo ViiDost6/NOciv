@@ -28,9 +28,11 @@ public class UnitManager : MonoBehaviour
     public enum State { NoSelection, UnitSelected, SelectingMovement, SelectingAttack, SelectingSpawn }
 
     private Unit currentUnitHover = null;
+    private Building currentBuildingHover = null;
     private TileData currentTileHover = null;
     public Unit currentUnitSelected = null;
     private GameObject currentUI = null;
+    private GameObject currentBaseUI = null;
     public State currentState = State.NoSelection;
 
     private Unit.UnitType unitTypeToSpawn;
@@ -42,6 +44,7 @@ public class UnitManager : MonoBehaviour
 
     public int playerBaseCount = 0;
     public int aiBaseCount = 0;
+    private Building currentBuildingSelected = null;
 
     private void Awake()
     {
@@ -379,9 +382,18 @@ public class UnitManager : MonoBehaviour
 
     private void HandleHover()
     {
+        if(currentBuildingSelected != null)
+        {
+            if (currentUnitHover != null && currentUnitHover != currentUnitSelected)
+            {
+                currentUnitHover.SetOutline(false);
+                currentUnitHover = null;
+            }
+            return;
+        }
+
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero);
-        Unit unitHit = hit.collider != null ? hit.collider.GetComponent<Unit>() : null;
 
         if (unitHit == currentUnitHover) return;
         if (currentUnitHover != null && currentUnitHover != currentUnitSelected) currentUnitHover.SetOutline(false);
@@ -409,6 +421,15 @@ public class UnitManager : MonoBehaviour
             if(AudioManager.Instance != null) AudioManager.Instance.PlaySFX(AudioManager.Instance.playerUnitSelect, 1.0f);
             currentState = State.UnitSelected;
         }
+
+        if (currentBaseUI != null && Input.GetMouseButtonDown(0))
+        {
+            if (!EventSystem.current.IsPointerOverGameObject())  // no tocar UI
+            {
+                // Click en el mundo → cerrar base UI
+                CloseBaseUI();
+            }
+        }
     }
 
     private void UpdateUnitSelected()
@@ -420,6 +441,7 @@ public class UnitManager : MonoBehaviour
         {
             currentUnitSelected.SetOutline(false);
             currentUnitSelected = null;
+            CloseBaseUI();
             DestroyUI();
             if(currentUnitHover != null) currentUnitHover.SetOutline(true);
             currentState = State.NoSelection;
@@ -643,6 +665,21 @@ public class UnitManager : MonoBehaviour
 
         attackBtn = null;
         moveBtn = null;
+    }
+
+    public void CreateNewUnit(GameObject unitPrefab, TileData tile)
+    {
+        GameObject newUnit = Instantiate(unitPrefab, tile.transform);
+        newUnit.transform.position = new Vector3(tile.transform.position.x, tile.transform.position.y, -1);
+
+        Unit u = newUnit.GetComponent<Unit>();
+        u.isPlayerUnit = true;
+        u.currentTile = tile;
+        u.movesLeftThisTurn = u.movesTotal;
+        u.hasAttackedThisTurn = false;
+        tile.hasUnit = true;
+
+        u.outline = newUnit.transform.Find("Outline").gameObject;
     }
 }
 // using UnityEngine;

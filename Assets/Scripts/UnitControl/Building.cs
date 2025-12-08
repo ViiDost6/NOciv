@@ -1,9 +1,13 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Building : MonoBehaviour
 {
     public int hasBeenClaimed = 0; // 0 = unclaimed, 1 = player, 2 = enemy
     public bool isBase = false;
+    public GameObject outline;
+    public TileData tile = null;
+
     public void UpdateState()
     {
         SpriteRenderer sr = GetComponent<SpriteRenderer>();
@@ -21,5 +25,11 @@ public class Building : MonoBehaviour
                 else sr.sprite = Resources.Load<Sprite>("Resource-Dog");
                 break;
         }
+    }
+
+    public void SetOutline(bool state)
+    {
+        if(outline == null) outline = transform.Find("Outline").gameObject;
+        outline.SetActive(state);
     }
 }
