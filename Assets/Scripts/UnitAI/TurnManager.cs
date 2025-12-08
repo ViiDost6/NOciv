@@ -12,7 +12,7 @@ public class TurnManager : MonoBehaviour
     public TurnState currentTurnState;
     
     [Header("Estado del Juego")]
-    public int turno = 1; // FIX: Variable reintroducida para MatchInitializer
+    public int turno = 1;
 
     [Header("UI References")]
     public Button endTurnButton;
@@ -37,7 +37,6 @@ public class TurnManager : MonoBehaviour
 
     void Start()
     {
-        // Si no hay MatchInitializer, arrancamos normal (para pruebas).
         if (FindObjectOfType<MatchInitializer>() == null)
         {
             StartCoroutine(DelayedStart());
@@ -50,22 +49,17 @@ public class TurnManager : MonoBehaviour
         IniciarTurno();
     }
 
-    // --- FIX: Método público para iniciar la partida correctamente ---
     public void IniciarTurno()
     {
-        // 1. Resetear variables
         playerResources = 0;
         aiResources = 0;
         turno = 1;
-        
-        // 2. Contar edificios iniciales
-        RecalculateBaseCounts();
-
-        // 3. Empezar turno jugador
+        RecalculateEconomy(); // Esto ahora actualizará la UI inicial
         StartPlayerTurn();
     }
 
-    private void RecalculateBaseCounts()
+    // --- FIX: Método mejorado para recalcular y ACTUALIZAR UI ---
+    public void RecalculateEconomy()
     {
         if (unitManager == null) return;
 
@@ -74,7 +68,9 @@ public class TurnManager : MonoBehaviour
         playerResourceBuildings = 0;
         aiResourceBuildings = 0;
 
+        // Búsqueda costosa pero segura para sincronizar estado visual y lógico
         Building[] allBuildings = FindObjectsByType<Building>(FindObjectsSortMode.None);
+        
         foreach(var b in allBuildings)
         {
             if (b.isBase)
@@ -82,14 +78,35 @@ public class TurnManager : MonoBehaviour
                 if (b.hasBeenClaimed == 1) unitManager.playerBaseCount++;
                 else if (b.hasBeenClaimed == 2) unitManager.aiBaseCount++;
             }
-            else // Recursos
+            else 
             {
                 if (b.hasBeenClaimed == 1) playerResourceBuildings++;
                 else if (b.hasBeenClaimed == 2) aiResourceBuildings++;
             }
         }
         
-        Debug.Log($"[TurnManager] Recuento Inicial -> Player Bases: {unitManager.playerBaseCount} | AI Bases: {unitManager.aiBaseCount}");
+        Debug.Log($"[Economy] Player Mines: {playerResourceBuildings} | AI Mines: {aiResourceBuildings}");
+
+        // ACTUALIZAR UI INMEDIATAMENTE
+        // Solo tiene sentido mostrar el bono del jugador en su UI
+        UpdateResourceUI();
+    }
+
+    private void UpdateResourceUI()
+    {
+        if (turnResourceText != null)
+        {
+            // Ingreso proyectado para el próximo turno
+            int projectedIncome = (resourcePerTurn * 2) + (resourcePerTurn * playerResourceBuildings);
+            turnResourceText.text = $"{playerResources} (+{projectedIncome})";
+        }
+    }
+
+    // Método para gastar recursos (llamado al comprar unidades) y actualizar la UI al momento
+    public void SpendPlayerResources(int amount)
+    {
+        playerResources -= amount;
+        UpdateResourceUI();
     }
 
     public void OnEndTurnButtonPressed()
@@ -118,14 +135,20 @@ public class TurnManager : MonoBehaviour
     {
         currentTurnState = TurnState.PlayerTurn;
 
+        // 1. Recalcular posesiones
+        RecalculateEconomy(); 
+        
+        // 2. Cobrar Ingresos
+        int income = (resourcePerTurn * 2) + (resourcePerTurn * playerResourceBuildings);
+        playerResources += income;
+
         if(AudioManager.Instance != null)
             AudioManager.Instance.PlaySFX(AudioManager.Instance.playerTurnStart, 1.0f);
 
         if(turnIndicatorText != null) turnIndicatorText.text = $"Turno Jugador ({turno})";
         
-        // Ingresos
-        playerResources += resourcePerTurn * (playerResourceBuildings + 2);
-        if(turnResourceText != null) turnResourceText.text = $"{playerResources}";
+        // 3. Actualizar UI final con el nuevo saldo
+        UpdateResourceUI();
 
         if(endTurnButton != null) endTurnButton.interactable = true;
         
@@ -138,13 +161,14 @@ public class TurnManager : MonoBehaviour
         currentTurnState = TurnState.AIProcessing;
         if(turnIndicatorText != null) turnIndicatorText.text = "Turno IA";
 
-        aiResources += resourcePerTurn * (aiResourceBuildings + 2);
+        RecalculateEconomy();
+        int aiIncome = (resourcePerTurn * 2) + (resourcePerTurn * aiResourceBuildings);
+        aiResources += aiIncome;
 
         if(endTurnButton != null) endTurnButton.interactable = false;
         
         ResetUnitsActions(false);
         
-        // 1. Fase Estratégica
         if(commanderAI != null) commanderAI.PrepareTurn(); 
         
         yield return new WaitForSeconds(0.5f);
@@ -153,10 +177,14 @@ public class TurnManager : MonoBehaviour
 
         List<Unit> aiUnits = GetAllUnits(false);
         
-        // 2. Fase Táctica
         foreach (Unit unit in aiUnits)
         {
             if (unit == null || unit.health <= 0) continue;
+
+            if(AudioManager.Instance != null)
+                AudioManager.Instance.PlaySFX(AudioManager.Instance.aiUnitTurnStart, 1.0f);
+            
+            yield return new WaitForSeconds(0.3f); 
 
             AIUnitController controller = unit.GetComponent<AIUnitController>();
             if (controller == null) continue;
@@ -170,23 +198,16 @@ public class TurnManager : MonoBehaviour
             {
                 NodeState result = controller.ExecuteTree();
                 
-                if (result == NodeState.Running)
-                {
-                    yield return null;
-                }
-                else if (result == NodeState.Success || result == NodeState.Failure)
-                {
-                    treeFinished = true;
-                }
+                if (result == NodeState.Running) yield return null;
+                else if (result == NodeState.Success || result == NodeState.Failure) treeFinished = true;
                 
                 if (!controller.IsBusy) watchdog++;
                 else watchdog = 0; 
             }
-
             yield return new WaitForSeconds(0.2f);
         }
 
-        turno++; // Incrementamos turno al finalizar la IA
+        turno++; 
         StartPlayerTurn();
     }
 

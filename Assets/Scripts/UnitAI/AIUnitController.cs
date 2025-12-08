@@ -60,7 +60,7 @@ public class AIUnitController : MonoBehaviour
         return btRunner.RunTree();
     }
 
-    // --- RECONOCIMIENTO TÁCTICO V10 (Hyper-Aggressive) ---
+    // --- RECONOCIMIENTO TÁCTICO V11 ---
     public void PerformTacticalRecon()
     {
         currentAnalysis = new TacticalAnalysis();
@@ -87,7 +87,6 @@ public class AIUnitController : MonoBehaviour
         {
             if (tile.hasUnit && tile != unit.currentTile) continue;
 
-            // 1. ESTRATEGIA
             float stratScore = CalculateStrategicScore(tile);
             if (tile == unit.currentTile) stratScore -= isCamping ? 500.0f : 0.5f;
             
@@ -102,7 +101,6 @@ public class AIUnitController : MonoBehaviour
                 currentAnalysis.bestStrategicMove = tile;
             }
 
-            // 2. LOCAL
             float localScore = CalculateLocalScore(tile);
             float distLocal = Mathf.Abs(tile.gridPosition.x - unit.currentTile.gridPosition.x) + 
                               Mathf.Abs(tile.gridPosition.y - unit.currentTile.gridPosition.y);
@@ -115,7 +113,6 @@ public class AIUnitController : MonoBehaviour
             }
         }
 
-        // 3. FALLBACK FORZOSO
         if ((currentAnalysis.bestStrategicMove == unit.currentTile || maxStratScore < 0.1f) && candidates.Count > 1)
         {
             List<TileData> roamingOptions = new List<TileData>();
@@ -164,56 +161,39 @@ public class AIUnitController : MonoBehaviour
 
     private float CalculateLocalScore(TileData tile) {
         float score = 0;
-        
-        // Miedo base
         float threat = influenceMap != null ? influenceMap.GetThreatAt(tile.gridPosition) : 0;
         float healthPct = (float)unit.health / unit.maxHealth;
         
-        // VALENTÍA: Si estoy sano (>70%), el miedo me afecta muy poco (0.3).
         float currentBravery = (healthPct > 0.7f) ? 0.3f : (healthPct < 0.4f ? 2.5f : 1.0f);
+        float effectiveFear = fearFactor * currentBravery;
         
-        // Aplicar miedo (reducido por valentía)
-        score -= threat * fearFactor * currentBravery; 
+        score -= threat * effectiveFear; 
 
-        // Anti-aglomeración
         if (HasFriendlyNeighbor(tile)) score -= 2.0f;
 
-        // Captura
         if (tile.currentBuilding != null) {
             int team = unit.isPlayerUnit ? 1 : 2;
             if (tile.currentBuilding.hasBeenClaimed != team) score += tile.currentBuilding.isBase ? 100.0f : 50.0f; 
         }
 
-        // --- AGRESIVIDAD CALCULADA ---
         if (!unit.hasAttackedThisTurn)
         {
             Unit bestVictim = GetBestTargetFromPosition(tile);
             if (bestVictim != null)
             {
-                float attackScore = 40.0f; // Base por entrar en combate
-
-                // Bonus: Daño vs Vida Restante
+                float attackScore = 40.0f; 
                 float damagePct = (float)unit.damage / bestVictim.maxHealth;
                 if (damagePct > 0.4f) attackScore += 30.0f;
 
-                // Bonus: Ejecución (Kill)
                 if (bestVictim.health <= unit.damage) 
                 {
-                    attackScore += 120.0f; // Prioridad MÁXIMA
-                    
-                    // INTELIGENCIA DE COMBATE:
-                    // Si mato a este enemigo, la amenaza que ÉL proyectaba sobre esta casilla desaparece.
-                    // Por tanto, puedo ignorar el miedo que viene de él.
-                    // (Asumimos crudamente que el 50% de la amenaza local venía de él)
-                    score += (threat * fearFactor * currentBravery) * 0.5f; 
+                    attackScore += 120.0f; 
+                    if (healthPct > 0.3f) score += 20.0f; 
                 }
                 else
                 {
-                    // Si no lo mato, él me pegará el turno que viene.
-                    // Si estoy herido, evito combates que no puedo terminar.
                     if (healthPct < 0.5f) attackScore -= 30.0f;
                 }
-
                 score += attackScore;
             }
         }
@@ -225,13 +205,16 @@ public class AIUnitController : MonoBehaviour
     private Unit GetBestTargetFromPosition(TileData pos) {
         int range = unit.attackRange; if (pos.tileType == 2) range += 1;
         var enemies = TurnManager.Instance.GetAllUnits(!unit.isPlayerUnit);
-        Unit bestVictim = null; float lowestHealth = float.MaxValue;
+        Unit bestVictim = null; float bestVal = -1f;
+
         foreach(var enemy in enemies) {
             if(enemy == null) continue;
             int dist = Mathf.Abs(pos.gridPosition.x - enemy.currentTile.gridPosition.x) + 
                        Mathf.Abs(pos.gridPosition.y - enemy.currentTile.gridPosition.y);
+            
             if (dist <= range) {
-                if (enemy.health < lowestHealth) { lowestHealth = enemy.health; bestVictim = enemy; }
+                float val = 1.0f - ((float)enemy.health / enemy.maxHealth);
+                if (val > bestVal) { bestVal = val; bestVictim = enemy; }
             }
         }
         return bestVictim;
@@ -302,7 +285,9 @@ public class AIUnitController : MonoBehaviour
             }
             unit.transform.position = endPos;
             unit.currentTile.hasUnit = false; unit.currentTile = nextTile; nextTile.hasUnit = true;
+            
             HandleCapture(nextTile);
+
             if (UnitManager.Instance.aiBaseCount <= 0 || UnitManager.Instance.playerBaseCount <= 0) yield break;
             yield return null; 
         }
@@ -316,7 +301,14 @@ public class AIUnitController : MonoBehaviour
                 tile.currentBuilding.hasBeenClaimed = team;
                 if (AudioManager.Instance != null) AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip, 1.0f);
                 tile.currentBuilding.UpdateState();
+                
+                // Actualizar mapas de influencia
                 if (influenceMap != null) influenceMap.RefreshDesireMap();
+                
+                // FIX: Actualizar economía global INMEDIATAMENTE
+                // Esto hará que la UI del jugador muestre la pérdida de ingresos al instante
+                if (TurnManager.Instance != null) TurnManager.Instance.RecalculateEconomy();
+
                 if (tile.currentBuilding.isBase) {
                     if (team == 1) { UnitManager.Instance.playerBaseCount++; UnitManager.Instance.aiBaseCount--; }
                     else { UnitManager.Instance.aiBaseCount++; UnitManager.Instance.playerBaseCount--; }
