@@ -352,13 +352,14 @@ public class UnitManager : MonoBehaviour
                     }
 
                     tile.currentBuilding.UpdateState();
+                    // CRÍTICO: Recalcular economía PRIMERO para tener los contadores reales.
                     if(TurnManager.Instance != null) TurnManager.Instance.RecalculateEconomy(); 
 
-                    if (tile.currentBuilding.isBase)
-                    {
-                        if (team == 1) { playerBaseCount++; aiBaseCount--; }
-                        else { aiBaseCount++; playerBaseCount--; }
-                    }
+                    // ELIMINADO: Incremento/Decremento manual. 
+                    // Ahora confiamos 100% en los valores calculados por RecalculateEconomy()
+                    
+                    if(aiBaseCount <= 0 && TurnManager.Instance != null) TurnManager.Instance.EndGame(true);
+                    else if(playerBaseCount <= 0 && TurnManager.Instance != null) TurnManager.Instance.EndGame(false);
                     if(aiBaseCount <= 0 && TurnManager.Instance != null) TurnManager.Instance.EndGame(true);
                     else if(playerBaseCount <= 0 && TurnManager.Instance != null) TurnManager.Instance.EndGame(false);
                 }
@@ -372,12 +373,6 @@ public class UnitManager : MonoBehaviour
             foreach(TileData t in currentUnitSelected.reachableTiles) t.SetOutline(true, Color.darkMagenta);
         }
         UpdateButtonVisual();
-    }
-
-    public IEnumerator AI_MoveAlongFullPath(Unit unit, List<TileData> fullPath, Action onComplete)
-    {
-        onComplete?.Invoke();
-        yield break; 
     }
 
     private void HandleHover()
@@ -605,7 +600,7 @@ public class UnitManager : MonoBehaviour
         }
     }
 
-    private List<TileData> CalculateTilesInRange(TileData startTile, int range)
+    public List<TileData> CalculateTilesInRange(TileData startTile, int range)
     {
         List<TileData> inRange = new List<TileData>();
         HashSet<TileData> visited = new HashSet<TileData>();
@@ -851,7 +846,7 @@ public class UnitManager : MonoBehaviour
 //                     {
 //                         if (team == 1)
 //                         {
-//                             playerBaseCount++;
+//                             ++;
 //                             aiBaseCount--;
 //                         }
 //                         else 
