@@ -70,7 +70,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7489689906259755515, guid: aeaff19e485265c47be59b105ae13672, type: 3}
       propertyPath: movesTotal
-      value: 10
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 7866629118758835748, guid: aeaff19e485265c47be59b105ae13672, type: 3}
       propertyPath: m_Name

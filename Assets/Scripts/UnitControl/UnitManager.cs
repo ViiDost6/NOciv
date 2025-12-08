@@ -369,7 +369,7 @@ public class UnitManager : MonoBehaviour
         if(currentState == State.SelectingMovement)
         {
             currentUnitSelected.reachableTiles = CalculateReachableTilesWithPaths(unit.currentTile, unit.movesLeftThisTurn);
-            foreach(TileData t in currentUnitSelected.reachableTiles) t.SetOutline(true, Color.darkGray);
+            foreach(TileData t in currentUnitSelected.reachableTiles) t.SetOutline(true, Color.darkMagenta);
         }
         UpdateButtonVisual();
     }
@@ -382,6 +382,8 @@ public class UnitManager : MonoBehaviour
 
     private void HandleHover()
     {
+        Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero);
         if(currentBuildingSelected != null)
         {
             if (currentUnitHover != null && currentUnitHover != currentUnitSelected)
@@ -392,8 +394,7 @@ public class UnitManager : MonoBehaviour
             return;
         }
 
-        Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero);
+        Unit unitHit = hit.collider != null ? hit.collider.GetComponent<Unit>() : null;
 
         if (unitHit == currentUnitHover) return;
         if (currentUnitHover != null && currentUnitHover != currentUnitSelected) currentUnitHover.SetOutline(false);
@@ -421,15 +422,6 @@ public class UnitManager : MonoBehaviour
             if(AudioManager.Instance != null) AudioManager.Instance.PlaySFX(AudioManager.Instance.playerUnitSelect, 1.0f);
             currentState = State.UnitSelected;
         }
-
-        if (currentBaseUI != null && Input.GetMouseButtonDown(0))
-        {
-            if (!EventSystem.current.IsPointerOverGameObject())  // no tocar UI
-            {
-                // Click en el mundo → cerrar base UI
-                CloseBaseUI();
-            }
-        }
     }
 
     private void UpdateUnitSelected()
@@ -441,7 +433,6 @@ public class UnitManager : MonoBehaviour
         {
             currentUnitSelected.SetOutline(false);
             currentUnitSelected = null;
-            CloseBaseUI();
             DestroyUI();
             if(currentUnitHover != null) currentUnitHover.SetOutline(true);
             currentState = State.NoSelection;
@@ -512,7 +503,7 @@ public class UnitManager : MonoBehaviour
             currentUnitSelected.shownMoveTiles.Clear();
             currentUnitSelected.reachableTiles = CalculateReachableTilesWithPaths(currentUnitSelected.currentTile, currentUnitSelected.movesLeftThisTurn);
             currentUnitSelected.shownMoveTiles.AddRange(currentUnitSelected.reachableTiles);
-            foreach (TileData t in currentUnitSelected.reachableTiles) { t.SetOutline(true, Color.darkGray); currentUnitSelected.shownMoveTiles.Add(t); }
+            foreach (TileData t in currentUnitSelected.reachableTiles) { t.SetOutline(true, Color.darkMagenta); currentUnitSelected.shownMoveTiles.Add(t); }
         } else {
             foreach (TileData tile in currentUnitSelected.shownMoveTiles) tile.SetOutline(false);
             currentUnitSelected.shownMoveTiles.Clear();
@@ -591,7 +582,7 @@ public class UnitManager : MonoBehaviour
         TileData tileHit = hit.collider != null ? hit.collider.GetComponent<TileData>() : null;
 
         if(currentTileHover != null && currentUnitSelected.reachableTiles.Contains(currentTileHover)) {
-            currentTileHover.SetOutline(true, Color.darkGray);
+            currentTileHover.SetOutline(true, Color.darkMagenta);
             currentTileHover.outline.GetComponent<SpriteRenderer>().sortingOrder = -2;
         } else if (currentTileHover != null) {
             currentTileHover.outline.GetComponent<SpriteRenderer>().sortingOrder = -2;
@@ -891,7 +882,7 @@ public class UnitManager : MonoBehaviour
 //             currentUnitSelected.reachableTiles = CalculateReachableTilesWithPaths(unit.currentTile, unit.movesLeftThisTurn);
 //             foreach(TileData t in currentUnitSelected.reachableTiles)
 //             {
-//                 t.SetOutline(true, Color.darkGray);
+//                 t.SetOutline(true, Color.darkMagenta);
 //             }
 //         }
 //         UpdateButtonVisual();
@@ -1150,7 +1141,7 @@ public class UnitManager : MonoBehaviour
 //             // Mostrar outline
 //             foreach (TileData t in currentUnitSelected.reachableTiles)
 //             {
-//                 t.SetOutline(true, Color.darkGray);
+//                 t.SetOutline(true, Color.darkMagenta);
 //                 currentUnitSelected.shownMoveTiles.Add(t);
 //             }
 //         }
@@ -1274,7 +1265,7 @@ public class UnitManager : MonoBehaviour
 //         // Limpiar outline anterior
 //         if(currentTileHover != null && currentUnitSelected.reachableTiles.Contains(currentTileHover))
 //         {
-//             currentTileHover.SetOutline(true, Color.darkGray);
+//             currentTileHover.SetOutline(true, Color.darkMagenta);
 //             currentTileHover.outline.GetComponent<SpriteRenderer>().sortingOrder = -2;
 //         }
 //         else if (currentTileHover != null)

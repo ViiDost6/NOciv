@@ -124,7 +124,6 @@ public class TurnManager : MonoBehaviour
                 unitManager.ToggleAttackRange(false);
                 unitManager.currentUnitSelected.SetOutline(false);
             }
-            unitManager.CloseBaseUI();
             unitManager.currentUnitSelected = null;
             unitManager.currentState = UnitManager.State.NoSelection;
         }

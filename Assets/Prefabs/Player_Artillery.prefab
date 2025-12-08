@@ -126,7 +126,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8999305537956913064, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: movesTotal
-      value: 10
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 8999305537956913064, guid: 551e6c99323c89c4eaa54f32194cb808, type: 3}
       propertyPath: attackRange

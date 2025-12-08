@@ -32,6 +32,10 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Untagged
       objectReference: {fileID: 0}
+    - target: {fileID: 2076062378754626448, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
+      propertyPath: movesTotal
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 4308877367586655854, guid: 3e0efaf73802e544e90779656584d90e, type: 3}
       propertyPath: m_Sprite
       value: 
