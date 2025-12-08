@@ -1,302 +1,371 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Utils; 
 
 [RequireComponent(typeof(Unit))]
 [RequireComponent(typeof(BehaviourTreeRunner))]
 public class AIUnitController : MonoBehaviour
 {
-    public TileData obj;
+    public TileData obj; 
     private Unit unit;
     private BehaviourTreeRunner btRunner;
-    
-    // Bandera para que el Nodo sepa cuándo esperar
     public bool IsBusy { get; private set; }
 
     [Header("Personality")]
     public float fearFactor = 1.0f;
     public float motivationFactor = 1.0f;
+    [Range(0f, 1f)] public float independence = 0.3f; 
 
-    [Header("Debug Tools")]
-    public bool debugMode = true;
+    [Header("Debug")]
+    public bool DebugMode = true; 
+
+    [Header("Analysis Cache")]
+    public TacticalAnalysis currentAnalysis; 
+
+    [System.Serializable]
+    public struct TacticalAnalysis {
+        public TileData bestStrategicMove; 
+        public float strategicScore;
+        public TileData bestLocalOpportunity; 
+        public float localScore;
+        public bool isLocalOptionBetter; 
+    }
 
     private InfluenceMap2 influenceMap;
+    private MapGenerator mapGenerator;
 
-    void Awake()
-    {
+    void Awake() {
         unit = GetComponent<Unit>();
         btRunner = GetComponent<BehaviourTreeRunner>();
     }
 
-    void Start()
-    {
+    void Start() {
         influenceMap = FindObjectOfType<InfluenceMap2>();
-        
-        // Configuración básica de personalidad
-        if (unit.unitType == Unit.UnitType.HeavyInfantry) fearFactor = 0.5f;
-        if (unit.unitType == Unit.UnitType.Artillery) fearFactor = 2.0f;
+        mapGenerator = FindObjectOfType<MapGenerator>();
+        if (unit.unitType == Unit.UnitType.HeavyInfantry) { fearFactor = 0.5f; independence = 0.2f; }
+        if (unit.unitType == Unit.UnitType.Artillery) { fearFactor = 2.0f; independence = 0.1f; }
     }
 
-    public NodeState ExecuteTree()
-    {
-        if (IsBusy) return NodeState.Running; // Si estamos moviendo, devolvemos Running
-        if (unit.movesLeftThisTurn <= 0 && unit.hasAttackedThisTurn) return NodeState.Failure;
+    public void ResetBehavior() {
+        IsBusy = false; StopAllCoroutines(); 
+        if (btRunner != null && btRunner.runningTree != null)
+            foreach (var node in btRunner.runningTree.nodes) node.ResetState();
+        currentAnalysis = new TacticalAnalysis();
+    }
+
+    public NodeState ExecuteTree() {
+        if (!IsBusy && unit.movesLeftThisTurn <= 0 && unit.hasAttackedThisTurn) 
+            return NodeState.Failure;
         return btRunner.RunTree();
     }
 
-    // --- LÓGICA DE MOVIMIENTO DE IA (Transferida desde UnitManager) ---
-
-    // Llamado por el Nodo MoveToStrategicPosition
-    public void MoveAlongPath(List<TileData> path)
+    // --- RECONOCIMIENTO TÁCTICO V10 (Hyper-Aggressive) ---
+    public void PerformTacticalRecon()
     {
-        if (path == null || path.Count == 0) return;
+        currentAnalysis = new TacticalAnalysis();
+        if (unit.movesLeftThisTurn <= 0) return;
+
+        List<TileData> candidates = GetReachableTilesBFS(unit.currentTile, unit.movesLeftThisTurn);
+        float maxStratScore = -float.MaxValue;
+        float maxLocalScore = -float.MaxValue;
+
+        Vector2Int distantObjective = Vector2Int.zero;
+        bool hasGlobalTarget = false;
         
-        IsBusy = true;
-        StartCoroutine(MoveUnitAlongPathRoutine(path));
-    }
-
-    private IEnumerator MoveUnitAlongPathRoutine(List<TileData> path)
-    {
-        Debug.Log($"[AI] Iniciando movimiento. Pasos: {path.Count}");
-
-        foreach (TileData nextTile in path)
-        {
-            // Ignoramos la casilla actual
-            if (nextTile == unit.currentTile) continue;
-            
-            // 1. Comprobación de movimiento
-            if (unit.movesLeftThisTurn <= 0) break;
-
-            // 2. Cálculo de Costes
-            int stepCost = 1;
-            // Regla: Artillería en montañas (TileType 2) cuesta más
-            if (unit.unitType == Unit.UnitType.Artillery && (unit.currentTile.tileType == 2 || nextTile.tileType == 2))
-            {
-                stepCost = 2;
-                // Excepción: Si le queda 1 movimiento, permitimos el último paso
-                if (unit.movesLeftThisTurn == 1) stepCost = 1;
-            }
-            
-            unit.movesLeftThisTurn -= stepCost;
-            if (unit.movesLeftThisTurn < 0) unit.movesLeftThisTurn = 0;
-
-            // 3. Audio
-            if(AudioManager.Instance != null) 
-                AudioManager.Instance.PlaySFX(AudioManager.Instance.moveClip, 1.0f);
-
-            // 4. Animación
-            Vector3 startPos = unit.transform.position;
-            Vector3 endPos = new Vector3(nextTile.transform.position.x, nextTile.transform.position.y, -1);
-
-            float duration = 0.3f;
-            float elapsed = 0f;
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.deltaTime;
-                float t = elapsed / duration;
-                unit.transform.position = Vector3.Lerp(startPos, endPos, Mathf.SmoothStep(0, 1, t));
-                yield return null; 
-            }
-
-            unit.transform.position = endPos;
-
-            // 5. Actualización de casilla
-            unit.currentTile.hasUnit = false;
-            unit.currentTile = nextTile;
-            nextTile.hasUnit = true;
-
-            // 6. Lógica de Captura de Edificios
-            if (nextTile.currentBuilding != null)
-            {
-                int team = unit.isPlayerUnit ? 1 : 2; // 1 = Jugador, 2 = IA
-
-                if (nextTile.currentBuilding.hasBeenClaimed != team)
-                {
-                    nextTile.currentBuilding.hasBeenClaimed = team;
-
-                    // Sonidos de captura
-                    if (AudioManager.Instance != null)
-                    {
-                        if (unit.isPlayerUnit)
-                            AudioManager.Instance.PlaySFX(AudioManager.Instance.capturePlayerClip, 1.0f);
-                        else
-                            AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip, 1.0f);
-                    }
-
-                    nextTile.currentBuilding.UpdateState();
-
-                    // Gestión de Bases (Usando UnitManager.Instance)
-                    if (nextTile.currentBuilding.isBase)
-                    {
-                        if (team == 1)
-                        {
-                            UnitManager.Instance.playerBaseCount++;
-                            UnitManager.Instance.aiBaseCount--;
-                        }
-                        else
-                        {
-                            UnitManager.Instance.aiBaseCount++;
-                            UnitManager.Instance.playerBaseCount--;
-                        }
-                    }
-
-                    // Condiciones de Victoria/Derrota
-                    if (UnitManager.Instance.aiBaseCount <= 0)
-                    {
-                        if(TurnManager.Instance != null) TurnManager.Instance.EndGame(true);
-                        yield break;
-                    }
-                    else if (UnitManager.Instance.playerBaseCount <= 0)
-                    {
-                        if(TurnManager.Instance != null) TurnManager.Instance.EndGame(false);
-                        yield break;
-                    }
-                }
-            }
-            
-            // Pequeña pausa entre pasos
-            yield return null; 
+        if(influenceMap != null) {
+            distantObjective = influenceMap.GetNearestHighDesirePoint(unit.currentTile.gridPosition);
+            if (distantObjective != unit.currentTile.gridPosition) hasGlobalTarget = true;
         }
 
-        IsBusy = false;
-        Debug.Log("[AI] Movimiento finalizado");
-    }
-
-    // --- ACCIONES DE COMBATE ---
-    
-    public void PerformAttack(Unit target)
-    {
-        IsBusy = true;
-        StartCoroutine(AttackRoutine(target));
-    }
-
-    private IEnumerator AttackRoutine(Unit target)
-    {
-        // ... (Tu lógica visual de ataque) ...
-        Vector3 originalPos = transform.position;
-        Vector3 targetPos = target.transform.position;
-        Vector3 attackPos = (originalPos + targetPos) / 2f;
-        
-        float duration = 0.2f;
-        float elapsed = 0f;
-        while(elapsed < duration) { elapsed += Time.deltaTime; unit.transform.position = Vector3.Lerp(originalPos, attackPos, elapsed/duration); yield return null; }
-
-        UnitManager.Instance.Attack(unit, target);
-        
-        yield return new WaitForSeconds(0.1f);
-
-        elapsed = 0f;
-        while(elapsed < duration) { elapsed += Time.deltaTime; unit.transform.position = Vector3.Lerp(attackPos, originalPos, elapsed/duration); yield return null; }
-        
-        unit.transform.position = originalPos;
-        IsBusy = false;
-    }
-
-    // --- UTILS (Pathfinding y Selección) ---
-
-    public TileData GetBestTacticalMovePosition()
-    {
-        if (unit.movesLeftThisTurn <= 0) return null;
-        if (influenceMap == null) return null;
-
-        List<TileData> candidates = GetReachableTiles();
-        TileData bestTile = null;
-        float bestScore = -float.MaxValue;
+        bool isCamping = false;
+        if (unit.currentTile.currentBuilding != null && unit.currentTile.currentBuilding.hasBeenClaimed == (unit.isPlayerUnit ? 1 : 2)) {
+            if (influenceMap != null && influenceMap.GetThreatAt(unit.currentTile.gridPosition) <= 0.1f) isCamping = true;
+        }
 
         foreach(var tile in candidates)
         {
             if (tile.hasUnit && tile != unit.currentTile) continue;
 
-            float threat = influenceMap.GetThreatAt(tile.gridPosition);
-            float desire = influenceMap.GetDesireAt(tile.gridPosition);
+            // 1. ESTRATEGIA
+            float stratScore = CalculateStrategicScore(tile);
+            if (tile == unit.currentTile) stratScore -= isCamping ? 500.0f : 0.5f;
             
-            float score = (desire * motivationFactor) - (threat * fearFactor);
-            score += Random.Range(0f, 0.5f);
+            if (hasGlobalTarget && tile != unit.currentTile) {
+                float currentDist = Vector2Int.Distance(unit.currentTile.gridPosition, distantObjective);
+                float newDist = Vector2Int.Distance(tile.gridPosition, distantObjective);
+                if (newDist < currentDist) stratScore += 2.0f;
+            }
 
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestTile = tile;
+            if (stratScore > maxStratScore) {
+                maxStratScore = stratScore;
+                currentAnalysis.bestStrategicMove = tile;
+            }
+
+            // 2. LOCAL
+            float localScore = CalculateLocalScore(tile);
+            float distLocal = Mathf.Abs(tile.gridPosition.x - unit.currentTile.gridPosition.x) + 
+                              Mathf.Abs(tile.gridPosition.y - unit.currentTile.gridPosition.y);
+            localScore -= (distLocal * 0.5f);
+            if (tile == unit.currentTile) localScore -= isCamping ? 500.0f : 0.5f;
+
+            if (localScore > maxLocalScore) {
+                maxLocalScore = localScore;
+                currentAnalysis.bestLocalOpportunity = tile;
             }
         }
-        
-        if (bestTile == unit.currentTile) return null;
-        return bestTile;
-    }
 
-    public List<TileData> CalculatePath(TileData start, TileData end)
-    {
-        if (start == null || end == null) return new List<TileData>();
-
-        Queue<TileData> queue = new Queue<TileData>();
-        Dictionary<TileData, TileData> cameFrom = new Dictionary<TileData, TileData>();
-        
-        queue.Enqueue(start);
-        cameFrom[start] = null;
-
-        bool found = false;
-
-        while (queue.Count > 0)
+        // 3. FALLBACK FORZOSO
+        if ((currentAnalysis.bestStrategicMove == unit.currentTile || maxStratScore < 0.1f) && candidates.Count > 1)
         {
-            TileData current = queue.Dequeue();
-            if (current == end) { found = true; break; }
-
-            foreach (TileData neighbor in current.neighbors)
+            List<TileData> roamingOptions = new List<TileData>();
+            foreach(var c in candidates) if(c != unit.currentTile && !c.hasUnit) roamingOptions.Add(c);
+            
+            if(roamingOptions.Count > 0)
             {
-                if (neighbor.walkable && !cameFrom.ContainsKey(neighbor))
-                {
-                    if (neighbor.hasUnit && neighbor != end) continue;
-                    cameFrom[neighbor] = current;
-                    queue.Enqueue(neighbor);
+                if (hasGlobalTarget) {
+                    TileData targetTile = mapGenerator.GetTileAtPosition(distantObjective);
+                    if (targetTile != null) {
+                        List<TileData> path = CalculatePath(unit.currentTile, targetTile);
+                        TileData nextStep = FindFurthestReachableOnPath(path, unit.movesLeftThisTurn);
+                        if (nextStep != null && nextStep != unit.currentTile) {
+                            currentAnalysis.bestStrategicMove = nextStep; maxStratScore = 5.0f;
+                        }
+                    }
+                } else {
+                    currentAnalysis.bestStrategicMove = roamingOptions[Random.Range(0, roamingOptions.Count)];
+                    maxStratScore = 1.0f;
                 }
             }
         }
 
-        if (!found) return new List<TileData>();
+        currentAnalysis.strategicScore = maxStratScore;
+        currentAnalysis.localScore = maxLocalScore;
+        float threshold = (1.0f - independence) + 0.5f; 
+        currentAnalysis.isLocalOptionBetter = (maxLocalScore > maxStratScore * threshold);
+    }
 
-        List<TileData> path = new List<TileData>();
-        TileData curr = end;
-        while (curr != start)
-        {
-            path.Add(curr);
-            curr = cameFrom[curr];
+    private TileData FindFurthestReachableOnPath(List<TileData> fullPath, int moves) {
+        if (fullPath == null || fullPath.Count == 0) return null;
+        TileData bestReach = null; int costSoFar = 0;
+        foreach (TileData t in fullPath) {
+            if (t == unit.currentTile) continue; 
+            int stepCost = (int)t.weight; if (unit.unitType == Unit.UnitType.Artillery && t.tileType == 2) stepCost = 2;
+            if (costSoFar + stepCost <= moves) { costSoFar += stepCost; bestReach = t; } else break; 
         }
-        path.Add(start);
+        return bestReach;
+    }
+
+    private float CalculateStrategicScore(TileData tile) {
+        float desire = influenceMap != null ? influenceMap.GetDesireAt(tile.gridPosition) : 0;
+        float threat = influenceMap != null ? influenceMap.GetThreatAt(tile.gridPosition) : 0;
+        return (desire * motivationFactor) - (threat * fearFactor);
+    }
+
+    private float CalculateLocalScore(TileData tile) {
+        float score = 0;
+        
+        // Miedo base
+        float threat = influenceMap != null ? influenceMap.GetThreatAt(tile.gridPosition) : 0;
+        float healthPct = (float)unit.health / unit.maxHealth;
+        
+        // VALENTÍA: Si estoy sano (>70%), el miedo me afecta muy poco (0.3).
+        float currentBravery = (healthPct > 0.7f) ? 0.3f : (healthPct < 0.4f ? 2.5f : 1.0f);
+        
+        // Aplicar miedo (reducido por valentía)
+        score -= threat * fearFactor * currentBravery; 
+
+        // Anti-aglomeración
+        if (HasFriendlyNeighbor(tile)) score -= 2.0f;
+
+        // Captura
+        if (tile.currentBuilding != null) {
+            int team = unit.isPlayerUnit ? 1 : 2;
+            if (tile.currentBuilding.hasBeenClaimed != team) score += tile.currentBuilding.isBase ? 100.0f : 50.0f; 
+        }
+
+        // --- AGRESIVIDAD CALCULADA ---
+        if (!unit.hasAttackedThisTurn)
+        {
+            Unit bestVictim = GetBestTargetFromPosition(tile);
+            if (bestVictim != null)
+            {
+                float attackScore = 40.0f; // Base por entrar en combate
+
+                // Bonus: Daño vs Vida Restante
+                float damagePct = (float)unit.damage / bestVictim.maxHealth;
+                if (damagePct > 0.4f) attackScore += 30.0f;
+
+                // Bonus: Ejecución (Kill)
+                if (bestVictim.health <= unit.damage) 
+                {
+                    attackScore += 120.0f; // Prioridad MÁXIMA
+                    
+                    // INTELIGENCIA DE COMBATE:
+                    // Si mato a este enemigo, la amenaza que ÉL proyectaba sobre esta casilla desaparece.
+                    // Por tanto, puedo ignorar el miedo que viene de él.
+                    // (Asumimos crudamente que el 50% de la amenaza local venía de él)
+                    score += (threat * fearFactor * currentBravery) * 0.5f; 
+                }
+                else
+                {
+                    // Si no lo mato, él me pegará el turno que viene.
+                    // Si estoy herido, evito combates que no puedo terminar.
+                    if (healthPct < 0.5f) attackScore -= 30.0f;
+                }
+
+                score += attackScore;
+            }
+        }
+
+        if (tile.tileType == 2 && threat > 0.1f) score += 5.0f;
+        return score;
+    }
+
+    private Unit GetBestTargetFromPosition(TileData pos) {
+        int range = unit.attackRange; if (pos.tileType == 2) range += 1;
+        var enemies = TurnManager.Instance.GetAllUnits(!unit.isPlayerUnit);
+        Unit bestVictim = null; float lowestHealth = float.MaxValue;
+        foreach(var enemy in enemies) {
+            if(enemy == null) continue;
+            int dist = Mathf.Abs(pos.gridPosition.x - enemy.currentTile.gridPosition.x) + 
+                       Mathf.Abs(pos.gridPosition.y - enemy.currentTile.gridPosition.y);
+            if (dist <= range) {
+                if (enemy.health < lowestHealth) { lowestHealth = enemy.health; bestVictim = enemy; }
+            }
+        }
+        return bestVictim;
+    }
+
+    private bool HasFriendlyNeighbor(TileData tile) {
+        foreach(var n in tile.neighbors) {
+            if (n.hasUnit && n.GetComponentInChildren<Unit>() != null && !n.GetComponentInChildren<Unit>().isPlayerUnit) return true;
+        }
+        return false;
+    }
+
+    public TileData GetBestTacticalMovePosition() {
+        PerformTacticalRecon();
+        return currentAnalysis.isLocalOptionBetter ? currentAnalysis.bestLocalOpportunity : currentAnalysis.bestStrategicMove;
+    }
+
+    public List<TileData> CalculatePath(TileData start, TileData end) {
+        if (start == end || start == null || end == null) return new List<TileData>();
+        var frontier = new PriorityQueue<TileData, float>();
+        frontier.Enqueue(start, 0);
+        var cameFrom = new Dictionary<TileData, TileData>();
+        var costSoFar = new Dictionary<TileData, float>();
+        cameFrom[start] = null; costSoFar[start] = 0;
+        while (frontier.Count > 0) {
+            TileData current = frontier.Dequeue();
+            if (current == end) break;
+            foreach (var neighbor in current.neighbors) {
+                if (!neighbor.walkable) continue;
+                if (neighbor.hasUnit && neighbor != end && neighbor != start) continue;
+                float newCost = costSoFar[current] + neighbor.weight;
+                if (!costSoFar.ContainsKey(neighbor) || newCost < costSoFar[neighbor]) {
+                    costSoFar[neighbor] = newCost;
+                    float priority = newCost + (Mathf.Abs(neighbor.gridPosition.x - end.gridPosition.x) + Mathf.Abs(neighbor.gridPosition.y - end.gridPosition.y));
+                    frontier.Enqueue(neighbor, priority);
+                    cameFrom[neighbor] = current;
+                }
+            }
+        }
+        if (!cameFrom.ContainsKey(end)) return null;
+        var path = new List<TileData>(); TileData curr = end;
+        while (curr != start) { path.Add(curr); curr = cameFrom[curr]; }
         path.Reverse();
         return path;
     }
 
-    private List<TileData> GetReachableTiles()
-    {
-        // BFS simple de 1 nivel (o rango de movimiento) para decidir el próximo paso
-        List<TileData> inRange = new List<TileData>();
-        if(unit.currentTile == null) return inRange;
+    public void MoveAlongPath(List<TileData> path) {
+        if (path == null || path.Count == 0 || IsBusy) return;
+        IsBusy = true; StartCoroutine(MoveUnitAlongPathRoutine(path));
+    }
 
-        foreach (TileData neighbor in unit.currentTile.neighbors)
-        {
-            if (neighbor.walkable && !neighbor.hasUnit)
-                inRange.Add(neighbor);
+    private IEnumerator MoveUnitAlongPathRoutine(List<TileData> path) {
+        foreach (TileData nextTile in path) {
+            if (nextTile == unit.currentTile) continue;
+            float dist = Vector3.Distance(unit.transform.position, nextTile.transform.position);
+            if (dist > 3.0f) { IsBusy = false; yield break; }
+            int stepCost = 1;
+            if (unit.unitType == Unit.UnitType.Artillery && (unit.currentTile.tileType == 2 || nextTile.tileType == 2)) {
+                stepCost = 2; if (unit.movesLeftThisTurn == 1) stepCost = 1;
+            }
+            if (unit.movesLeftThisTurn < stepCost) break;
+            unit.movesLeftThisTurn -= stepCost;
+            if (AudioManager.Instance != null) AudioManager.Instance.PlaySFX(AudioManager.Instance.moveClip, 1.0f);
+            Vector3 startPos = unit.transform.position; Vector3 endPos = nextTile.transform.position; endPos.z = startPos.z;
+            float duration = 0.3f; float elapsed = 0f;
+            while (elapsed < duration) {
+                elapsed += Time.deltaTime; unit.transform.position = Vector3.Lerp(startPos, endPos, elapsed / duration); yield return null; 
+            }
+            unit.transform.position = endPos;
+            unit.currentTile.hasUnit = false; unit.currentTile = nextTile; nextTile.hasUnit = true;
+            HandleCapture(nextTile);
+            if (UnitManager.Instance.aiBaseCount <= 0 || UnitManager.Instance.playerBaseCount <= 0) yield break;
+            yield return null; 
         }
-        return inRange;
+        IsBusy = false;
+    }
+
+    private void HandleCapture(TileData tile) {
+        if (tile.currentBuilding != null) {
+            int team = unit.isPlayerUnit ? 1 : 2;
+            if (tile.currentBuilding.hasBeenClaimed != team) {
+                tile.currentBuilding.hasBeenClaimed = team;
+                if (AudioManager.Instance != null) AudioManager.Instance.PlaySFX(AudioManager.Instance.captureAIClip, 1.0f);
+                tile.currentBuilding.UpdateState();
+                if (influenceMap != null) influenceMap.RefreshDesireMap();
+                if (tile.currentBuilding.isBase) {
+                    if (team == 1) { UnitManager.Instance.playerBaseCount++; UnitManager.Instance.aiBaseCount--; }
+                    else { UnitManager.Instance.aiBaseCount++; UnitManager.Instance.playerBaseCount--; }
+                    if (UnitManager.Instance.aiBaseCount <= 0) TurnManager.Instance.EndGame(true);
+                    else if (UnitManager.Instance.playerBaseCount <= 0) TurnManager.Instance.EndGame(false);
+                }
+            }
+        }
+    }
+
+    public void PerformAttack(Unit target) { IsBusy = true; StartCoroutine(AttackRoutine(target)); }
+    private IEnumerator AttackRoutine(Unit target) {
+        if (target == null) { IsBusy = false; yield break; }
+        Vector3 start = transform.position; Vector3 end = target.transform.position;
+        float t = 0; while(t < 1) { t += Time.deltaTime * 5; transform.position = Vector3.Lerp(start, Vector3.Lerp(start, end, 0.4f), t); yield return null; }
+        UnitManager.Instance.Attack(unit, target);
+        yield return new WaitForSeconds(0.1f);
+        t = 0; while(t < 1) { t += Time.deltaTime * 5; transform.position = Vector3.Lerp(Vector3.Lerp(start, end, 0.4f), start, t); yield return null; }
+        transform.position = start; IsBusy = false;
+    }
+
+    private List<TileData> GetReachableTilesBFS(TileData start, int maxMoves) {
+        List<TileData> reachable = new List<TileData>();
+        Queue<(TileData, int)> queue = new Queue<(TileData, int)>();
+        HashSet<TileData> visited = new HashSet<TileData>();
+        queue.Enqueue((start, 0)); visited.Add(start); reachable.Add(start);
+        while (queue.Count > 0) {
+            var (current, cost) = queue.Dequeue();
+            foreach (var neighbor in current.neighbors) {
+                if (!neighbor.walkable || visited.Contains(neighbor)) continue;
+                if (neighbor.hasUnit) continue; 
+                int stepCost = neighbor.weight > 1 ? (int)neighbor.weight : 1; 
+                if (unit.unitType == Unit.UnitType.Artillery && (current.tileType == 2 || neighbor.tileType == 2)) stepCost = 2;
+                int newCost = cost + stepCost;
+                if (newCost <= maxMoves) { visited.Add(neighbor); reachable.Add(neighbor); queue.Enqueue((neighbor, newCost)); }
+            }
+        }
+        return reachable;
     }
     
-    public Unit GetBestTargetInRange()
-    {
+    public Unit GetBestTargetInRange() {
         if (unit.hasAttackedThisTurn) return null;
-        // ... (Lógica de búsqueda de enemigos ya implementada antes)
-        // Por brevedad, asumimos que usas la lógica previa o la de UnitManager
-        var allUnits = TurnManager.Instance.GetAllUnits(true); 
-        Unit best = null; float maxScore = -1;
-
-        foreach(var enemy in allUnits) {
-             // Distancia simple
+        int range = unit.attackRange; if (unit.currentTile.tileType == 2) range += 1;
+        Unit best = null; float minHealth = 999f;
+        foreach(var enemy in TurnManager.Instance.GetAllUnits(true)) {
+             if(enemy == null) continue;
              int dist = Mathf.Abs(unit.currentTile.gridPosition.x - enemy.currentTile.gridPosition.x) + 
                         Mathf.Abs(unit.currentTile.gridPosition.y - enemy.currentTile.gridPosition.y);
-             if (dist <= unit.attackRange) {
-                 float score = 10; // Simplificado
-                 if (score > maxScore) { maxScore = score; best = enemy; }
-             }
+             if (dist <= range && enemy.health < minHealth) { minHealth = enemy.health; best = enemy; }
         }
         return best;
     }

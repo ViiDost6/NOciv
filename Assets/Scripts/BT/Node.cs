@@ -2,38 +2,38 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
+// Estado Inactive añadido para limpiar el debug visual
 public enum NodeState
 {
-    Running, // En ejecución
-    Success, // Terminado con éxito
-    Failure // Fallido
+    Inactive, 
+    Running, 
+    Success, 
+    Failure 
 }
 
 [System.Serializable]
 public abstract class Node
 {
     public string nodeName;
-    [HideInInspector]
-    public string guid;
-    // Guardamos la posición del nodo en el grafo
+    [HideInInspector] public string guid;
     [HideInInspector] public Vector2 position;
-    // Almacena el estado para que los nodos que estén en ejecución (Running) puedan continuar
-    protected NodeState state;
+    
+    // Inicializamos en Inactive para que no empiece con colores
+    protected NodeState state = NodeState.Inactive; 
     public NodeState GetState() { return state; }
 
     public virtual void ResetState()
     {
-        state = NodeState.Failure; // Un estado "inactivo" por defecto
+        // Al resetear, volvemos a estado neutro
+        state = NodeState.Inactive; 
     }
-    // Método principal que evalua el árbol
+
     public abstract NodeState Evaluate(GameObject agent);
 }
 
 [System.Serializable]
 public abstract class CompositeNode : Node
 {
-    // Esta lista será la que tu GUI (GraphView) modificará
-    // [SerializeReference] es útil aquí si no usas ScriptableObjects por nodo.
     [SerializeReference]
     public List<Node> children = new List<Node>();
 }
@@ -41,7 +41,6 @@ public abstract class CompositeNode : Node
 [System.Serializable]
 public abstract class DecoratorNode : Node
 {
-    // Guarda referencia de su único hijo
     [SerializeReference]
     public Node child;
 }
@@ -50,20 +49,17 @@ public abstract class DecoratorNode : Node
 public class CallMethodNode : Node
 {
     [ShowInEditor]
-    public string taskName; // E.g., "Attack"
+    public string taskName; 
 
     public override NodeState Evaluate(GameObject agent)
     {
-        // 1. Encontrar el Runner en el agente
         BehaviourTreeRunner runner = agent.GetComponent<BehaviourTreeRunner>();
         if (runner == null)
         {
-            Debug.LogError($"CallMethodNode: No se encontró BehaviourTreeRunner en {agent.name}");
+            Debug.LogError($"CallMethodNode: No BehaviourTreeRunner in {agent.name}");
             state = NodeState.Failure;
             return state;
         }
-
-        // 2. Pedirle al Runner que ejecute la tarea
         state = runner.ExecuteTask(taskName);
         return state;
     }
@@ -79,7 +75,6 @@ public class RootNode : DecoratorNode
             state = NodeState.Failure;
             return state;
         }
-
         state = child.Evaluate(agent);
         return state;
     }
@@ -88,14 +83,12 @@ public class RootNode : DecoratorNode
 [System.Serializable]
 public class DebugLogNode : Node
 {
-    [ShowInEditor]
-    public string message;
+    [ShowInEditor] public string message;
 
     public override NodeState Evaluate(GameObject agent)
     {
         Debug.Log(message);
-        state = NodeState.Success; // Siempre tiene éxito instantáneamente
+        state = NodeState.Success; 
         return state;
     }
 }
-

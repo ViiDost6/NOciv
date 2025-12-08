@@ -11,6 +11,9 @@ public class TurnManager : MonoBehaviour
     public enum TurnState { PlayerTurn, AIProcessing, AIExecuting }
     public TurnState currentTurnState;
     
+    [Header("Estado del Juego")]
+    public int turno = 1; // FIX: Variable reintroducida para MatchInitializer
+
     [Header("UI References")]
     public Button endTurnButton;
     public TextMeshProUGUI turnIndicatorText;
@@ -34,97 +37,156 @@ public class TurnManager : MonoBehaviour
 
     void Start()
     {
+        // Si no hay MatchInitializer, arrancamos normal (para pruebas).
+        if (FindObjectOfType<MatchInitializer>() == null)
+        {
+            StartCoroutine(DelayedStart());
+        }
+    }
+
+    private IEnumerator DelayedStart()
+    {
+        yield return null;
+        IniciarTurno();
+    }
+
+    // --- FIX: Método público para iniciar la partida correctamente ---
+    public void IniciarTurno()
+    {
+        // 1. Resetear variables
+        playerResources = 0;
+        aiResources = 0;
+        turno = 1;
+        
+        // 2. Contar edificios iniciales
+        RecalculateBaseCounts();
+
+        // 3. Empezar turno jugador
         StartPlayerTurn();
+    }
+
+    private void RecalculateBaseCounts()
+    {
+        if (unitManager == null) return;
+
+        unitManager.playerBaseCount = 0;
+        unitManager.aiBaseCount = 0;
+        playerResourceBuildings = 0;
+        aiResourceBuildings = 0;
+
+        Building[] allBuildings = FindObjectsByType<Building>(FindObjectsSortMode.None);
+        foreach(var b in allBuildings)
+        {
+            if (b.isBase)
+            {
+                if (b.hasBeenClaimed == 1) unitManager.playerBaseCount++;
+                else if (b.hasBeenClaimed == 2) unitManager.aiBaseCount++;
+            }
+            else // Recursos
+            {
+                if (b.hasBeenClaimed == 1) playerResourceBuildings++;
+                else if (b.hasBeenClaimed == 2) aiResourceBuildings++;
+            }
+        }
+        
+        Debug.Log($"[TurnManager] Recuento Inicial -> Player Bases: {unitManager.playerBaseCount} | AI Bases: {unitManager.aiBaseCount}");
     }
 
     public void OnEndTurnButtonPressed()
     {
-        AudioManager.Instance.PlaySFX(AudioManager.Instance.buttonClip, 1.0f);
+        if (currentTurnState != TurnState.PlayerTurn) return;
 
-        if (currentTurnState == TurnState.PlayerTurn)
+        if(AudioManager.Instance != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.buttonClip, 1.0f);
+
+        if(unitManager != null)
         {
             unitManager.DestroyUI();
-            if(unitManager.currentUnitSelected != null) unitManager.ToggleAttackRange(false);
-            if(unitManager.currentUnitSelected != null) unitManager.currentUnitSelected.SetOutline(false);
+            if(unitManager.currentUnitSelected != null) 
+            {
+                unitManager.ToggleAttackRange(false);
+                unitManager.currentUnitSelected.SetOutline(false);
+            }
             unitManager.currentUnitSelected = null;
             unitManager.currentState = UnitManager.State.NoSelection;
-            StartCoroutine(ExecuteAITurnRoutine());
         }
+
+        StartCoroutine(ExecuteAITurnRoutine());
     }
 
     private void StartPlayerTurn()
     {
         currentTurnState = TurnState.PlayerTurn;
 
-        AudioManager.Instance.PlaySFX(AudioManager.Instance.playerTurnStart, 1.0f);
+        if(AudioManager.Instance != null)
+            AudioManager.Instance.PlaySFX(AudioManager.Instance.playerTurnStart, 1.0f);
 
-        turnIndicatorText.text = $"Turno Jugador";
-        turnResourceText.text = $"{playerResources}";
-
+        if(turnIndicatorText != null) turnIndicatorText.text = $"Turno Jugador ({turno})";
+        
+        // Ingresos
         playerResources += resourcePerTurn * (playerResourceBuildings + 2);
+        if(turnResourceText != null) turnResourceText.text = $"{playerResources}";
 
-        endTurnButton.interactable = true;
+        if(endTurnButton != null) endTurnButton.interactable = true;
+        
         ResetUnitsActions(true);
-        unitManager.UpdateButtonVisual();
+        if(unitManager != null) unitManager.UpdateButtonVisual();
     }
 
     private IEnumerator ExecuteAITurnRoutine()
     {
         currentTurnState = TurnState.AIProcessing;
-        turnIndicatorText.text = "Turno IA";
+        if(turnIndicatorText != null) turnIndicatorText.text = "Turno IA";
 
         aiResources += resourcePerTurn * (aiResourceBuildings + 2);
 
-        endTurnButton.interactable = false;
+        if(endTurnButton != null) endTurnButton.interactable = false;
+        
         ResetUnitsActions(false);
-        commanderAI.PrepareTurn(); 
+        
+        // 1. Fase Estratégica
+        if(commanderAI != null) commanderAI.PrepareTurn(); 
         
         yield return new WaitForSeconds(0.5f);
 
         currentTurnState = TurnState.AIExecuting;
 
         List<Unit> aiUnits = GetAllUnits(false);
-        bool anyUnitActed = true;
-        int securityLoopBreak = 0;
         
-        // Loop principal de acciones de la IA
-        while (anyUnitActed && securityLoopBreak < 20) 
+        // 2. Fase Táctica
+        foreach (Unit unit in aiUnits)
         {
-            anyUnitActed = false;
-            foreach (Unit unit in aiUnits)
-            {
-                if (unit == null) continue;
+            if (unit == null || unit.health <= 0) continue;
 
-                AIUnitController controller = unit.GetComponent<AIUnitController>();
+            AIUnitController controller = unit.GetComponent<AIUnitController>();
+            if (controller == null) continue;
+
+            controller.ResetBehavior();
+
+            bool treeFinished = false;
+            int watchdog = 0;
+
+            while (!treeFinished && watchdog < 1000)
+            {
+                NodeState result = controller.ExecuteTree();
                 
-                // Solo actuamos si la unidad tiene movimientos y no está muerta
-                if (controller != null && unit.movesLeftThisTurn > 0 && unit.health > 0)
+                if (result == NodeState.Running)
                 {
-                    // Ejecutar Behavior Tree
-                    NodeState result = controller.ExecuteTree();
-                    
-                    if (result == NodeState.Success)
-                    {
-                        anyUnitActed = true;
-                        
-                        // Esperar un frame para asegurar que IsBusy se ha actualizado
-                        yield return null; 
-                        
-                        // Esperar mientras la unidad realiza su acción (Moverse/Atacar)
-                        if (controller.IsBusy)
-                        {
-                            yield return new WaitUntil(() => !controller.IsBusy);
-                        }
-                        
-                        // Pequeña pausa dramática entre unidades
-                        yield return new WaitForSeconds(0.15f);
-                    }
+                    yield return null;
                 }
+                else if (result == NodeState.Success || result == NodeState.Failure)
+                {
+                    treeFinished = true;
+                }
+                
+                if (!controller.IsBusy) watchdog++;
+                else watchdog = 0; 
             }
-            securityLoopBreak++;
-            // Pausa entre rondas de acciones para no congelar si el bucle es largo
-            yield return null; 
+
+            yield return new WaitForSeconds(0.2f);
         }
+
+        turno++; // Incrementamos turno al finalizar la IA
         StartPlayerTurn();
     }
 
@@ -156,19 +218,25 @@ public class TurnManager : MonoBehaviour
     {
         currentTurnState = TurnState.AIProcessing;
         StopAllCoroutines();
-        if (unitManager.currentUnitSelected != null) unitManager.currentUnitSelected.SetOutline(false);
-        unitManager.DestroyUI();
-        endTurnButton.interactable = false;
-        AudioManager.Instance.musicSource.Stop();
+        
+        if (unitManager != null)
+        {
+            if (unitManager.currentUnitSelected != null) unitManager.currentUnitSelected.SetOutline(false);
+            unitManager.DestroyUI();
+        }
+
+        if(endTurnButton != null) endTurnButton.interactable = false;
+        if(AudioManager.Instance != null) AudioManager.Instance.musicSource.Stop();
+        
         if (playerWon)
         {
-            AudioManager.Instance.PlaySFX(AudioManager.Instance.victory, 1.0f);
-            turnIndicatorText.text = "¡Victoria!";
+            if(AudioManager.Instance != null) AudioManager.Instance.PlaySFX(AudioManager.Instance.victory, 1.0f);
+            if(turnIndicatorText != null) turnIndicatorText.text = "¡Victoria!";
         }
         else
         {
-            AudioManager.Instance.PlaySFX(AudioManager.Instance.defeat, 1.0f);
-            turnIndicatorText.text = "¡Derrota!";
+            if(AudioManager.Instance != null) AudioManager.Instance.PlaySFX(AudioManager.Instance.defeat, 1.0f);
+            if(turnIndicatorText != null) turnIndicatorText.text = "¡Derrota!";
         }
     }
 }

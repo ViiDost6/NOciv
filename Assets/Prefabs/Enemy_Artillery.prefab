@@ -128,7 +128,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80b952cdf393b393a9de74389d9ba489, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BehaviourTreeRunner
-  treeAsset: {fileID: 11400000, guid: 7244ecce62c607454a9abb35523ae176, type: 2}
+  treeAsset: {fileID: 11400000, guid: fa7ee444219a2fc01b37293e086805fb, type: 2}
   taskBindings: []
 --- !u!114 &8336379733755916273
 MonoBehaviour:
@@ -142,5 +142,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb12a82bb9b18383b98c53ea13bd9081, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AIUnitController
+  obj: {fileID: 0}
   fearFactor: 1
   motivationFactor: 1
+  independence: 0.3
+  DebugMode: 1
+  currentAnalysis:
+    bestStrategicMove: {fileID: 0}
+    strategicScore: 0
+    bestLocalOpportunity: {fileID: 0}
+    localScore: 0
+    isLocalOptionBetter: 0

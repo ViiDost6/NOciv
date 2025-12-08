@@ -3,16 +3,29 @@ using System.Collections.Generic;
 
 public class CommanderAI2 : MonoBehaviour
 {
-    // Estado actual de la FSM
     private CommanderState currentState;
     
-    // Referencias públicas para que los Estados las usen (Contexto compartido)
     public StructureManager structureManager;
     public TurnManager turnManager;
     private InfluenceMap2 influenceMap;
 
     [Header("Debug Info")]
-    [SerializeField] private string currentStateName; // Para ver en el inspector
+    [SerializeField] private string currentStateName;
+    
+    // --- MÉTRICAS DE INTELIGENCIA ---
+    [Header("Strategic Metrics (0.0 - 1.0)")]
+    [SerializeField] private float tension;          
+    [SerializeField] private float vulnerability;    
+    [SerializeField] private float dominance;        
+    [SerializeField] private float economicSafety;   
+    [SerializeField] private float enemyExposure; // NUEVO: ¿Qué tan desprotegido está el rival?
+
+    // Getters
+    public float Tension => tension;
+    public float Vulnerability => vulnerability;
+    public float Dominance => dominance;
+    public float EconomicSafety => economicSafety;
+    public float EnemyExposure => enemyExposure;
 
     void Start()
     {
@@ -23,62 +36,61 @@ public class CommanderAI2 : MonoBehaviour
         if (influenceMap != null)
             influenceMap.Initialize(FindObjectOfType<MapGenerator>(), structureManager);
 
-        // Estado inicial por defecto
         ChangeState(new ExploreState(this));
     }
 
-    // --- AQUÍ ESTÁ LA LÓGICA CENTRALIZADA ---
     public void PrepareTurn()
     {
-        Debug.Log("--- Commander AI: Inicio de Turno (FSM) ---");
+        Debug.Log("--- Commander AI: Inicio de Turno (Análisis Estratégico) ---");
 
-        // PASO 1: Tareas Comunes (Centralizadas)
-        // No importa en qué estado estemos, SIEMPRE hay que hacer esto
         UpdateGlobalData();
 
-        // PASO 2: Transiciones
-        // Preguntamos al estado actual si quiere cambiar
         CommanderState nextState = currentState.CheckTransitions();
-        if (nextState != null && nextState != currentState)
+        if (nextState != null && nextState.GetType() != currentState.GetType())
         {
             ChangeState(nextState);
         }
 
-        // PASO 3: Ejecución Específica
-        // Delegamos la decisión estratégica al estado
         currentState.UpdateStrategy();
     }
 
     private void UpdateGlobalData()
     {
-        // 1. Escanear estructuras (si se destruyó alguna el turno anterior)
         structureManager.ScanStructuresInScene();
 
-        // 2. Actualizar Mapa de Amenazas
-        // Esto es caro computacionalmente, así que lo hacemos UNA vez aquí
-        // y todos los estados se benefician del mapa ya calculado.
-        List<Unit> playerUnits = turnManager.GetAllUnits(true); 
-        influenceMap.CalculateThreatMap(playerUnits);
+        List<Unit> enemyUnits = turnManager.GetAllUnits(true); 
+        List<Unit> myUnits = turnManager.GetAllUnits(false);   
+
+        influenceMap.CalculateThreatMap(enemyUnits);
+        influenceMap.CalculateAllyMap(myUnits);
+
+        // --- CÁLCULO DE MÉTRICAS ---
         
-        Debug.Log("[Central] Mapas de Influencia y Estructuras actualizados.");
+        tension = influenceMap.GetGlobalTension();
+
+        float threatOnBases = influenceMap.GetAverageThreatAtPositions(structureManager.EnemyTowerPositions);
+        vulnerability = Mathf.Clamp01(threatOnBases / 5.0f);
+
+        dominance = influenceMap.GetTerritorialDominance();
+
+        float threatOnResources = influenceMap.GetAverageThreatAtPositions(structureManager.ResourcePositions);
+        economicSafety = 1.0f - Mathf.Clamp01(threatOnResources / 3.0f);
+
+        // NUEVO: Analizar bases del jugador humano para ver si están solas
+        enemyExposure = influenceMap.GetEnemyExposure(structureManager.PlayerTowerPositions);
+
+        Debug.Log($"[Intel] Tension:{tension:F1} | Vuln:{vulnerability:F1} | Exp:{enemyExposure:F1} | Dom:{dominance:F1}");
     }
 
     private void ChangeState(CommanderState newState)
     {
         if (currentState != null) currentState.Exit();
-        
         currentState = newState;
-        currentStateName = currentState.GetType().Name; // Update visual inspector
-        
+        currentStateName = currentState.GetType().Name;
         currentState.Enter();
     }
 
-    // --- Helpers para los Estados ---
-    // Métodos públicos que simplifican la vida a las clases State
-    
     public InfluenceMap2 GetInfluenceMap() => influenceMap;
-    
     public int GetMyUnitCount() => turnManager.GetAllUnits(false).Count;
-    
     public int GetEnemyUnitCount() => turnManager.GetAllUnits(true).Count;
 }

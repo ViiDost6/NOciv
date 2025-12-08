@@ -23,6 +23,10 @@ MonoBehaviour:
   - rid: 2042380929226244174
   - rid: 2042380929226244175
   - rid: 2042380929226244177
+  - rid: 5992904776231682111
+  - rid: 5992904776231682112
+  - rid: 5992904801740128321
+  - rid: 5992904801740128322
   references:
     version: 2
     RefIds:
@@ -48,40 +52,68 @@ MonoBehaviour:
       data:
         nodeName: 
         guid: 9117fb4b-feb3-4dd0-ad33-f79abc2a9698
-        position: {x: 168, y: 315}
+        position: {x: 92, y: 315}
         children:
         - rid: 2042380929226244173
         - rid: 2042380929226244174
+        - rid: 5992904801740128321
+        - rid: 5992904801740128322
     - rid: 2042380929226244172
       type: {class: Sequence, ns: , asm: Assembly-CSharp}
       data:
         nodeName: 
         guid: 012610c2-e2c2-43c2-affd-4426ae93293b
-        position: {x: 402, y: 353}
+        position: {x: 466, y: 315}
         children:
         - rid: 2042380929226244175
         - rid: 2042380929226244177
+        - rid: 5992904776231682111
+        - rid: 5992904776231682112
     - rid: 2042380929226244173
       type: {class: CheckCanAttackNode, ns: , asm: Assembly-CSharp}
       data:
         nodeName: 
         guid: 1db5652d-c432-4241-bf85-4288064b9dc2
-        position: {x: 23, y: 459}
+        position: {x: -433, y: 459}
     - rid: 2042380929226244174
       type: {class: AttackBestTargetNode, ns: , asm: Assembly-CSharp}
       data:
         nodeName: 
         guid: b7ea6b7b-18b3-43bf-8610-61562ba30522
-        position: {x: 244, y: 463}
+        position: {x: -221, y: 459}
     - rid: 2042380929226244175
       type: {class: CheckCanMoveNode, ns: , asm: Assembly-CSharp}
       data:
         nodeName: 
         guid: 737a907b-2c95-4e57-b5e7-3a42ba933751
-        position: {x: 467, y: 459}
+        position: {x: 436, y: 472}
     - rid: 2042380929226244177
       type: {class: MoveToStrategicPositionNode, ns: , asm: Assembly-CSharp}
       data:
         nodeName: 
         guid: e79dd143-bd2d-427f-9f6e-6a22f08960ab
-        position: {x: 650, y: 461}
+        position: {x: 640, y: 472}
+    - rid: 5992904776231682111
+      type: {class: CheckCanAttackNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 1f98cbd4-95a3-4a70-b5fb-9e482e2c419e
+        position: {x: 924, y: 459}
+    - rid: 5992904776231682112
+      type: {class: AttackBestTargetNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: ebedcef8-75fe-46a1-a532-4a0a078c83ea
+        position: {x: 1112, y: 459}
+    - rid: 5992904801740128321
+      type: {class: CheckCanMoveNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 3f3bb50d-4a67-4520-a56a-9204406d1454
+        position: {x: -21, y: 459}
+    - rid: 5992904801740128322
+      type: {class: MoveToStrategicPositionNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: d2db4152-a059-4eea-943c-0013ae82b699
+        position: {x: 177, y: 459}

@@ -1,0 +1,120 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f68091db895f282b5bea84f96e0a0711, type: 3}
+  m_Name: AI 1
+  m_EditorClassIdentifier: Assembly-CSharp::BehaviourTree
+  rootNode:
+    rid: 2042380929226244169
+  nodes:
+  - rid: 2042380929226244169
+  - rid: 5992904801740128323
+  - rid: 5992904801740128324
+  - rid: 5992904801740128325
+  - rid: 5992904801740128326
+  - rid: 5992904801740128327
+  - rid: 5992904801740128328
+  - rid: 5992904801740128329
+  - rid: 5992904801740128330
+  - rid: 5992904801740128331
+  - rid: 5992904801740128332
+  - rid: 5992904801740128333
+  references:
+    version: 2
+    RefIds:
+    - rid: 2042380929226244169
+      type: {class: RootNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 8261a91d-ecc2-4bc6-b352-674a445a0ffd
+        position: {x: 308, y: 77}
+        child:
+          rid: 5992904801740128323
+    - rid: 5992904801740128323
+      type: {class: Selector, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: afac9f92-b0e2-4974-8d1c-b4f443e3ada3
+        position: {x: 297, y: 210}
+        children:
+        - rid: 5992904801740128325
+        - rid: 5992904801740128333
+    - rid: 5992904801740128324
+      type: {class: PerformReconNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: ea001ea7-c7a9-4fc6-95ac-8aee875f9c7d
+        position: {x: -70, y: 444}
+    - rid: 5992904801740128325
+      type: {class: Sequence, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 84d80156-fc0c-4f24-9482-2b9dcfd7bbb1
+        position: {x: 149, y: 315}
+        children:
+        - rid: 5992904801740128324
+        - rid: 5992904801740128326
+        - rid: 5992904801740128327
+        - rid: 5992904801740128332
+    - rid: 5992904801740128326
+      type: {class: CheckCanMoveNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 0638e43a-7748-4216-9c59-0a04c925655d
+        position: {x: 130, y: 444}
+    - rid: 5992904801740128327
+      type: {class: Selector, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 1996ca2f-308b-439c-aa10-dda4f1e3494c
+        position: {x: 348, y: 444}
+        children:
+        - rid: 5992904801740128328
+        - rid: 5992904801740128331
+    - rid: 5992904801740128328
+      type: {class: Sequence, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 7ec902f6-68e1-4287-b2c6-a8203281381e
+        position: {x: 296, y: 560}
+        children:
+        - rid: 5992904801740128329
+        - rid: 5992904801740128330
+    - rid: 5992904801740128329
+      type: {class: CheckBetterLocalObjectiveNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: 43b2f369-642f-4879-8094-229bbe3de378
+        position: {x: 64, y: 696}
+    - rid: 5992904801740128330
+      type: {class: MoveToLocalObjectiveNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: ee61105e-7a05-4e14-b28b-b968cfc76497
+        position: {x: 308, y: 696}
+    - rid: 5992904801740128331
+      type: {class: MoveToStrategicPositionNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: e5c3ab0f-e900-442a-9207-4b4e338c2452
+        position: {x: 514, y: 560}
+    - rid: 5992904801740128332
+      type: {class: AttackBestTargetNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: e8ce5ac7-f5a6-41ff-8ca5-97d4172741de
+        position: {x: 514, y: 444}
+    - rid: 5992904801740128333
+      type: {class: AttackBestTargetNode, ns: , asm: Assembly-CSharp}
+      data:
+        nodeName: 
+        guid: d3b40284-1080-4814-9778-7e4fedd5f273
+        position: {x: 450, y: 315}

@@ -68,6 +68,10 @@ PrefabInstance:
       propertyPath: m_Color.r
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7489689906259755515, guid: aeaff19e485265c47be59b105ae13672, type: 3}
+      propertyPath: movesTotal
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 7866629118758835748, guid: aeaff19e485265c47be59b105ae13672, type: 3}
       propertyPath: m_Name
       value: Enemy_Infantry
@@ -90,9 +94,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7866629118758835748, guid: aeaff19e485265c47be59b105ae13672, type: 3}
       insertIndex: -1
       addedObject: {fileID: -5127757907074787933}
-    - targetCorrespondingSourceObject: {fileID: 7866629118758835748, guid: aeaff19e485265c47be59b105ae13672, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7274840196414940177}
   m_SourcePrefab: {fileID: 100100000, guid: aeaff19e485265c47be59b105ae13672, type: 3}
 --- !u!1 &1015715446245863891 stripped
 GameObject:
@@ -111,7 +112,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80b952cdf393b393a9de74389d9ba489, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BehaviourTreeRunner
-  treeAsset: {fileID: 0}
+  treeAsset: {fileID: 11400000, guid: fa7ee444219a2fc01b37293e086805fb, type: 2}
   taskBindings: []
 --- !u!114 &-5127757907074787933
 MonoBehaviour:
@@ -125,19 +126,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb12a82bb9b18383b98c53ea13bd9081, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AIUnitController
+  obj: {fileID: 0}
   fearFactor: 1
   motivationFactor: 1
---- !u!114 &7274840196414940177
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1015715446245863891}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 80b952cdf393b393a9de74389d9ba489, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BehaviourTreeRunner
-  treeAsset: {fileID: 11400000, guid: 7244ecce62c607454a9abb35523ae176, type: 2}
-  taskBindings: []
+  independence: 0.3
+  DebugMode: 1
+  currentAnalysis:
+    bestStrategicMove: {fileID: 0}
+    strategicScore: 0
+    bestLocalOpportunity: {fileID: 0}
+    localScore: 0
+    isLocalOptionBetter: 0
