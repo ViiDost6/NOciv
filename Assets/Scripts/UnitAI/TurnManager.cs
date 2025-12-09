@@ -22,6 +22,8 @@ public class TurnManager : MonoBehaviour
     [Header("References")]
     public CommanderAI2 commanderAI;
     public UnitManager unitManager;
+    public GameObject win;
+    public GameObject lose;
     
     public int resourcePerTurn = 25;
 
@@ -252,12 +254,12 @@ public class TurnManager : MonoBehaviour
         if (playerWon)
         {
             if(AudioManager.Instance != null) AudioManager.Instance.PlaySFX(AudioManager.Instance.victory, 1.0f);
-            if(turnIndicatorText != null) turnIndicatorText.text = "¡Victoria!";
+            win.SetActive(true);
         }
         else
         {
             if(AudioManager.Instance != null) AudioManager.Instance.PlaySFX(AudioManager.Instance.defeat, 1.0f);
-            if(turnIndicatorText != null) turnIndicatorText.text = "¡Derrota!";
+            lose.SetActive(true);
         }
     }
 }

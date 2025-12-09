@@ -33031,7 +33031,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &476818296
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -89230,7 +89230,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: -3.999878, y: 0.9998779}
+  m_AnchoredPosition: {x: -4, y: 0.9998779}
   m_SizeDelta: {x: 755, y: 235}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1370474232
@@ -101844,6 +101844,8 @@ MonoBehaviour:
   turnResourceText: {fileID: 18722609}
   commanderAI: {fileID: 1539279156}
   unitManager: {fileID: 1272169034}
+  win: {fileID: 476818295}
+  lose: {fileID: 1698407486}
   resourcePerTurn: 25
   playerResources: 0
   aiResources: 0
@@ -114049,7 +114051,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1698407487
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -129559,7 +129561,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: -3.999878, y: -231}
+  m_AnchoredPosition: {x: -4, y: -231}
   m_SizeDelta: {x: 247, y: 246}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1928223304
